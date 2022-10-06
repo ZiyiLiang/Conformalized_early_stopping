@@ -103,7 +103,7 @@ class Conformal_PSet:
 
         pred_sets = []
         for i in iterator:
-            pred_sets.append(self._pred_set_single(test_inputs[i], i, best_model[i], marginal))
+            pred_sets.append(self._pred_set_single(test_inputs[i][None], i, best_model[i], marginal))
         if True:
             print("Finished computing {} prediction sets for {} test points.".format(['label conditional', 'marginal'][marginal], n_test))
         return list(pred_sets)
