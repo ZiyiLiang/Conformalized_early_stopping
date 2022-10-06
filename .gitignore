@@ -1,0 +1,32 @@
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+# Local History for Visual Studio Code
+.history/
+ 
+ 
+ 
+# Private Files
+*.json
+*.csv
+*.csv.gz
+*.tsv
+*.tsv.gz
+*.xlsx
+
+# Data related
+notebook_examples/data/
+notebook_examples/models/
+notebook_examples/CES-multiclass_test.ipynb
+
+
+CoraTestFolder/
+*.pth
+
+__pycache__/
+.ipynb_checkpoints/
+archive/
