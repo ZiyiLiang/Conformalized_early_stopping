@@ -30,3 +30,6 @@ CoraTestFolder/
 __pycache__/
 .ipynb_checkpoints/
 archive/
+
+third_party/mvtecad_pytorch/
+third_party/SPADE-pytorch/
