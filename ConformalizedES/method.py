@@ -187,7 +187,7 @@ class CES_oneClass(ConformalizedES):
                          val_loader, verbose, progress)
         
         # No need to compute accuracy
-        ConformalizedES.acc = False
+        self.acc = False
 
     def select_model(self, test_inputs = None):
         """ Return the indices of the best models from the model list for any test set
@@ -238,7 +238,7 @@ class CES_multiClass(ConformalizedES):
                          val_loader, verbose, progress)
         
         # Compute accuracy along with the loss
-        ConformalizedES.acc = True
+        self.acc = True
         self.n_classes = n_classes
         self.random_state = random_state
 
