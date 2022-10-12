@@ -1,7 +1,10 @@
+from turtle import forward
 from xml.sax.xmlreader import InputSource
+import numpy as np
 import torch as th 
 import torch.nn as nn
 import torch.nn.functional as F
+import pdb
 
 
 class SimpleConvolutionalNetwork(nn.Module):
@@ -11,8 +14,6 @@ class SimpleConvolutionalNetwork(nn.Module):
         self.conv1 = nn.Conv2d(3, 18, kernel_size=3, stride=1, padding=1)
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         
-        # cf comments in forward() to have step by step comments
-        # on the shape (how we pass from a 3x32x32 input image to a 18x16x16 volume)
         self.fc1 = nn.Linear(18 * 16 * 16, 64) 
         self.fc2 = nn.Linear(64, 10)
 
@@ -37,9 +38,9 @@ class SimpleConvolutionalNetwork(nn.Module):
         return x
     
     def predict_prob(self, inputs):
-        '''
+        """
         Predict probabilities given any input data
-        '''
+        """
         self.eval()
        
         get_prob = nn.Softmax(dim = 1)
@@ -49,77 +50,113 @@ class SimpleConvolutionalNetwork(nn.Module):
         return prob
 
 
-    
 
-    
-class Encoder(nn.Module):
-    
-    def __init__(self, input_dim, hidden_dim, latent_dim):
-        super(Encoder, self).__init__()
+class ConvAutoencoder_32(nn.Module):
+    def __init__(self):
+        super().__init__()
+        ## encoder layers ##
+        # channels: 1 -> 16
+        self.conv1 = nn.Conv2d(3, 16, 3, padding=1)  
+        # channels: 16 -> 4
+        self.conv2 = nn.Conv2d(16, 4, 3, padding=1)
+        # pooling layer with kernel of 2 and stride of 2 will decrease the dim by a factor of 2
+        self.pool = nn.MaxPool2d(2, 2)
+        
+        ## decoder layers ##
+        ## a kernel of 2 and a stride of 2 will increase the spatial dims by a factor of 2
+        self.t_conv1 = nn.ConvTranspose2d(4, 16, 2, stride=2)
+        self.t_conv2 = nn.ConvTranspose2d(16, 3, 2, stride=2)
 
-        self.FC_input = nn.Linear(input_dim, hidden_dim)
-        self.FC_input2 = nn.Linear(hidden_dim, hidden_dim)
-        self.FC_mean  = nn.Linear(hidden_dim, latent_dim)
-        self.FC_var   = nn.Linear (hidden_dim, latent_dim)
-        
-        self.LeakyReLU = nn.LeakyReLU(0.2)
-        
-        self.training = True
-        
     def forward(self, x):
-        h_       = self.LeakyReLU(self.FC_input(x))
-        h_       = self.LeakyReLU(self.FC_input2(h_))
-        mean     = self.FC_mean(h_)
-        log_var  = self.FC_var(h_)                     # encoder produces mean and log of variance 
-                                                       #             (i.e., parateters of simple tractable normal distribution "q"
+        ## encode ##
+        # add hidden layers with relu activation function
+        # and maxpooling after
+        # shape: 3x32x32 -> 16x32x32
+        x = F.relu(self.conv1(x))
+        # 16x32x32 -> 16x16x16
+        x = self.pool(x)
+        # add second hidden layer
+        # 16x16x16 -> 4x16x16
+        x = F.relu(self.conv2(x))
+        # 4x16x16 -> 4x8x8
+        x = self.pool(x)  # compressed representation
         
-        return mean, log_var
+        ## decode ##
+        # add transpose conv layers, with relu activation function
+        # shape: 4x8x8 -> 16x16x16
+        x = F.relu(self.t_conv1(x))
+        # output layer (with sigmoid for scaling from 0 to 1)
+        # 16x16x16 -> 3x32x32
+        x = th.sigmoid(self.t_conv2(x))
+        return x
 
-        
-class Decoder(nn.Module):
-    def __init__(self, latent_dim, hidden_dim, output_dim):
-        super(Decoder, self).__init__()
-        self.FC_hidden = nn.Linear(latent_dim, hidden_dim)
-        self.FC_hidden2 = nn.Linear(hidden_dim, hidden_dim)
-        self.FC_output = nn.Linear(hidden_dim, output_dim)
-        
-        self.LeakyReLU = nn.LeakyReLU(0.2)
-        
-    def forward(self, x):
-        h     = self.LeakyReLU(self.FC_hidden(x))
-        h     = self.LeakyReLU(self.FC_hidden2(h))   
-
-        x_hat = th.sigmoid(self.FC_output(h))
-        return x_hat
-
-
-class SimpleVAE(nn.Module):
-    def __init__(self, Encoder, Decoder, device):
-        super(SimpleVAE, self).__init__()
-        self.Encoder = Encoder
-        self.Decoder = Decoder
-        self.device = device
-        
-    def reparameterization(self, mean, var):
-        epsilon = th.randn_like(var).to(self.device)        # sampling epsilon        
-        z = mean + var*epsilon                          # reparameterization trick
-        return z
-        
-                
-    def forward(self, x):
-        mean, log_var = self.Encoder(x)
-        z = self.reparameterization(mean, th.exp(0.5 * log_var)) # takes exponential function (log var -> var)
-        x_hat = self.Decoder(z)     
-        return x_hat, mean, log_var
-    
+            
     def get_anomaly_scores(self, inputs):
-        '''
-        Compute the anomaly scores for a given set of inputs
-        '''
-        ## model.eval()
-        ## with_nograd etc....
+        """
+        Compute the anomaly scores for a given set of inputs as the rescontruction error
+        """
 
-        ##[TODO] determine the scores depending on the structure
+        self.eval()
+        with th.no_grad():
+            outputs = self(inputs)
+            Loss = th.nn.MSELoss(reduction='none')
+            scores = Loss(outputs.reshape(-1, 3 * 32 * 32), inputs.reshape(-1, 3 * 32 * 32))
+        
+        scores = np.mean(scores.numpy(), axis = 1)
+        return list(scores)
+ 
 
-        return None
 
+class ConvAutoencoder(nn.Module):
+    def __init__(self):
+        super(ConvAutoencoder, self).__init__()
+        ## encoder layers ##
+        # channels: 1 -> 16
+        self.conv1 = nn.Conv2d(1, 16, 3, padding=1)  
+        # channels: 16 -> 4
+        self.conv2 = nn.Conv2d(16, 4, 3, padding=1)
+        # pooling layer with kernel of 2 and stride of 2 will decrease the dim by a factor of 2
+        self.pool = nn.MaxPool2d(2, 2)
+        
+        ## decoder layers ##
+        ## a kernel of 2 and a stride of 2 will increase the spatial dims by a factor of 2
+        self.t_conv1 = nn.ConvTranspose2d(4, 16, 2, stride=2)
+        self.t_conv2 = nn.ConvTranspose2d(16, 1, 2, stride=2)
+
+    def forward(self, x):
+        ## encode ##
+        # add hidden layers with relu activation function
+        # and maxpooling after
+        # shape: 1x28x28 -> 16x28x28
+        x = F.relu(self.conv1(x))
+        # 16x28x28 -> 16x14x14
+        x = self.pool(x)
+        # add second hidden layer
+        # 16x14x14 -> 4x14x14
+        x = F.relu(self.conv2(x))
+        # 4x14x14 -> 4x7x7
+        x = self.pool(x)  # compressed representation
+        
+        ## decode ##
+        # add transpose conv layers, with relu activation function
+        # shape: 4x7x7 -> 16x14x14
+        x = F.relu(self.t_conv1(x))
+        # output layer (with sigmoid for scaling from 0 to 1)
+        # 16x14x14 -> 1x28x28
+        x = th.sigmoid(self.t_conv2(x))
+        return x
+
+            
+    def get_anomaly_scores(self, inputs):
+        """
+        Compute the anomaly scores for a given set of inputs as the rescontruction error
+        """
+
+        self.eval()
+        with th.no_grad():
+            outputs = self(inputs)
+            Loss = th.nn.MSELoss(reduction='none')
+            scores = Loss(outputs.reshape(-1, 28 * 28), inputs.reshape(-1, 28 * 28))
+        
+        scores = np.mean(scores.numpy(), axis = 1)
+        return list(scores)

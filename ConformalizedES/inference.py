@@ -2,6 +2,7 @@ import time
 import os
 import torch as th
 import numpy as np
+import pdb
 import pathlib
 from tqdm import tqdm
 from classification import ProbabilityAccumulator as ProbAccum
@@ -140,3 +141,104 @@ class Conformal_PSet:
             if label in S_hat[0]:
                 pred_set.append(label) 
         return pred_set
+
+
+class Conformal_PVals:
+    '''
+    Class for computing conformal p-values for any test set
+    '''
+    def __init__(self, net, device, cal_loader, model_list,
+                 verbose = True, progress = True, random_state = 2023) -> None:
+        self.net = net
+        self.device = device
+        self.cal_loader = cal_loader
+        self.model_list = model_list
+        self.verbose = verbose
+        self.progress = progress
+        self.random_state = random_state
+
+        if self.verbose:
+            print('Calibrating each model in the list...')
+        self._calibrate_scores()
+        if self.verbose:
+            print('Initialization done!')
+    
+
+    
+    def _calibrate_scores(self):
+        n_model = len(self.model_list)
+        self.cal_scores = [[]] * n_model
+        
+        if self.progress:
+            iterator = tqdm(range(n_model))
+        else:
+            iterator = range(n_model)
+
+        for model_idx in iterator:      
+            model_path = self.model_list[model_idx]
+            self.net.load_state_dict(th.load(model_path))
+
+            scores = []
+            for inputs, _ in self.cal_loader:
+                scores += self.net.get_anomaly_scores(inputs)
+
+            self.cal_scores[model_idx] = scores
+    
+
+
+    # def _get_vt_scores_single(self, test_input, model_path):
+    #     """ Get the scores of validation set and a single test point by a specific model
+    #     """
+    #     cal_scores = []
+
+    #     self.net.load_state_dict(th.load(model_path))
+
+    #     # Compute the anomaly scores for calibration set
+    #     for inputs, _ in self.cal_loader:
+    #         cal_scores.append(self.net.get_anomaly_scores(inputs))
+    #     # Compute the anomaly score for the test point
+    #     test_score = self.net.get_anomaly_scores(test_input)
+
+    #     return cal_scores, test_score
+
+
+
+    def _compute_pval_single(self, test_input, best_model):
+        '''
+        Calculate the conformal p-value for a single test point 
+        '''
+        try:
+            model_idx = self.model_list.index(best_model)
+        except ValueError:
+            print('Can not find the best model from the model list.')
+            raise
+
+        self.net.load_state_dict(th.load(best_model))
+        test_score = self.net.get_anomaly_scores(test_input)
+        cal_scores = self.cal_scores[model_idx]
+        n_cal = len(cal_scores)
+
+        pval = (1.0 + np.sum(np.array(cal_scores) > np.array(test_score))) / (1.0 + n_cal)
+        return pval
+
+    def compute_pvals(self, test_inputs, best_model):
+        """ Compute the conformal p-values for test points using a calibration set
+        """
+        n_test = len(test_inputs)
+        n_model = len(best_model)
+        assert n_test == n_model, 'Number of test points and number of models must match! If you want to use the same model for \
+                                   all points, reshape the model input as a repeated list.'
+
+        if self.progress:
+            iterator = tqdm(range(n_test))
+        else:
+            iterator = range(n_test)
+
+        pvals = -np.zeros(n_test)
+        for i in iterator:
+            pvals[i] = self._compute_pval_single(test_inputs[i], best_model[i])
+
+        if self.verbose:
+            print("Finished computing p-values for {} test points.".format(n_test))
+        return list(pvals)
+
