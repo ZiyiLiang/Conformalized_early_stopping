@@ -160,3 +160,60 @@ class ConvAutoencoder(nn.Module):
         
         scores = np.mean(scores.numpy(), axis = 1)
         return list(scores)
+    
+    
+class mse_model(nn.Module):
+    """ Deep conditional mean regression minimizing MSE loss
+    """
+
+    def __init__(self,
+                 in_shape=1,
+                 hidden_size=64,
+                 dropout=0.5):
+        """ Initialization
+
+        Parameters
+        ----------
+
+        in_shape : integer, input signal dimension (p)
+        hidden_size : integer, hidden layer dimension
+        dropout : float, dropout rate
+
+        """
+
+        super().__init__()
+        self.in_shape = in_shape
+        self.out_shape = 1
+        self.hidden_size = hidden_size
+        self.dropout = dropout
+        self.build_model()
+        self.init_weights()
+
+    def build_model(self):
+        """ Construct the network
+        """
+        self.base_model = nn.Sequential(
+            nn.Linear(self.in_shape, self.hidden_size),
+            nn.ReLU(),
+            nn.Dropout(self.dropout),
+            nn.Linear(self.hidden_size, self.hidden_size),
+            nn.ReLU(),
+            nn.Dropout(self.dropout),
+            nn.Linear(self.hidden_size, 1),
+        )
+
+    def init_weights(self):
+        """ Initialize the network parameters
+        """
+        for m in self.base_model:
+            if isinstance(m, nn.Linear):
+                nn.init.orthogonal_(m.weight)
+                nn.init.constant_(m.bias, 0)
+
+    def forward(self, x):
+        """ Run forward pass
+        """
+        return th.squeeze(self.base_model(x))
+
+def MSE_loss(outputs, inputs, targets):
+  return th.mean((outputs - targets)**2)
