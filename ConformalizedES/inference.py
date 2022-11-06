@@ -243,6 +243,7 @@ class Conformal_PVals:
         return list(pvals)
 
 
+
 class Conformal_PI:
     '''
     Class for computing prediction intervals for regression.
@@ -261,12 +262,11 @@ class Conformal_PI:
         """
         return np.abs(output - target)
 
-    def benchmark_ICP(self, test_inputs, cal_loader, best_model):
+    def benchmark_ICP(self, test_inputs, best_model):
         """Compute conformal prediction intervals for test inputs using the benchmark methods 
 
         Args:
             test_inputs (tensor): test covariates
-            cal_loader (dataloader): calibration data
             best_model (str): path of the best model
 
         Returns:
@@ -274,6 +274,7 @@ class Conformal_PI:
             format of the output (Example) : [Interval(2.5 , 3)]
         """
         self.net.load_state_dict(th.load(best_model))
+
         cal_scores = []
         for X_batch, y_batch in self.cal_loader:
             # input, response = input.to(self.device), response.to(self.device)
@@ -300,12 +301,11 @@ class Conformal_PI:
 
 
 
-    def CES_icp(self, test_inputs, cal_loader, best_models, method = ['union','cvxh'], no_empty = False):
+    def CES_icp(self, test_inputs, best_models, method = ['union','cvxh'], no_empty = False, mod = None):
         """Compute conformal prediction intervals for test inputs using the CES methods 
 
         Args:
             test_inputs (tensor): test covariates
-            cal_loader (dataloader): calibration data
             best_model (str): list of dictionaries containing information of the best model
             method (str): whether to take union or convex hull when forming the final prediction intervals
             no_empty (bool): whether to avoid empty prediction interval
@@ -321,71 +321,71 @@ class Conformal_PI:
         model_pi = []
 
         for bm in best_models:
-            self.net.load_state_dict(th.load(bm['model']))
+          self.net.load_state_dict(th.load(bm['model']))
             
-            # store the empirical conformity scores
-            cal_scores = []
-            
-            for input, response in cal_loader:
-            #input, response = input.to(self.device), response.to(self.device)
-            
-                with th.no_grad():
-                    # make prediction 
-                    pred = self.net(input)
-                # pred = pred.to(self.device)
-                # compute the conformity scores
-                score = self.nonconformity_scores(pred, response)
-                cal_scores.append(score.data.numpy())
-            
-            # unpack calibration scores into a list of numbers
-            cal_scores = [j for i in cal_scores for j in i]
-            n_cal = len(cal_scores)
-            # Get the score quantile
-            qhat = np.quantile(cal_scores, np.ceil((n_cal+1)*(1-self.alpha))/n_cal, interpolation='higher')
-            
-            test_pred = self.net(test_inputs).data.numpy()
-            # original prediction intervals constructed in a standard ICP way
-            initial_pi = [test_pred - qhat, test_pred + qhat]
-            # print('test_pred {}'.format(test_pred))
+          # store the empirical conformity scores
+          cal_scores = []
+          
+          for input, response in self.cal_loader:
+          #input, response = input.to(self.device), response.to(self.device)
+          
+              with th.no_grad():
+                  # make prediction 
+                  pred = self.net(input)
+              # pred = pred.to(self.device)
+              # compute the conformity scores
+              score = self.nonconformity_scores(pred, response)
+              cal_scores.append(score.data.numpy())
+          
+          # unpack calibration scores into a list of numbers
+          cal_scores = [j for i in cal_scores for j in i]
+          n_cal = len(cal_scores)
+          # Get the score quantile
+          qhat = np.quantile(cal_scores, np.ceil((n_cal+1)*(1-self.alpha))/n_cal, interpolation='higher')
+          test_pred = self.net(test_inputs).data.numpy()
+          # original prediction intervals constructed in a standard ICP way
+          initial_pi = [test_pred - qhat, test_pred + qhat]
+          # print('test_pred {}'.format(test_pred))
 
-            # take overlap between the original prediction intervals and the knots intervals
-            truncated_pi = [max(initial_pi[0], bm['knot_lower']), min(initial_pi[1], bm['knot_upper'])]
-            
-            # drop the invalid prediction intervals
-            if truncated_pi[0] > truncated_pi[1]:
-                # print('drop non-overlapping set')
-                continue
-            # else:
-            #     print('using model {}'.format(bm))
+          # take overlap between the original prediction intervals and the knots intervals
+          truncated_pi = [max(initial_pi[0], bm['knot_lower']), min(initial_pi[1], bm['knot_upper'])]
+          
+          # drop the invalid prediction intervals
+          if truncated_pi[0] > truncated_pi[1]:
+              # print('drop non-overlapping set')
+              continue
+          # else:
+          #     print('using model {}'.format(bm))
 
-            model_pi.append(truncated_pi)
-############################################## TO ADD ############################################### 
-        # if no_empty and len(model_pi) == 0:
-        #     bm_mod = method.select_model(self, test_inputs = None)
-        #     pi = benchmark_ICP(self, test_inputs, cal_loader, bm_mod)
-        #     return pi
+          model_pi.append(truncated_pi)
+
+        if no_empty and len(model_pi) == 0:
+          assert mod, "need to input model!"
+          bm_best_loss, bm_best_model, bm_test_val_loss_history = mod.select_model(test_inputs = None)
+          pi = self.benchmark_ICP(test_inputs, bm_best_model)
+          print('avoided empty interval, final pi is {}'.format(pi))
+          return pi
+
             
-        # print('model_pi {}'.format(model_pi))
-#####################################################################################################
 
         if method == 'union':
-            def union(data):
-                """ Union of a list of intervals """
-                intervals = [Interval(l, u) for (l, u) in data]
-                uni = Union(*intervals)
-                return [list(uni.args[:2])] if isinstance(uni, Interval) else list(uni.args)
-            
-            # take union of the list of intervals
-            unioned_pi = union(model_pi)
-            
-            if len(unioned_pi)==1:
-                # convert the format into Interval
-                unioned_pi = [Interval(unioned_pi[0][0],unioned_pi[0][1])]
-            return unioned_pi
+          def union(data):
+              """ Union of a list of intervals """
+              intervals = [Interval(l, u) for (l, u) in data]
+              uni = Union(*intervals)
+              return [list(uni.args[:2])] if isinstance(uni, Interval) else list(uni.args)
+          
+          # take union of the list of intervals
+          unioned_pi = union(model_pi)
+          
+          if len(unioned_pi)==1:
+              # convert the format into Interval
+              unioned_pi = [Interval(unioned_pi[0][0],unioned_pi[0][1])]
+          return unioned_pi
             
 
         elif method == 'cvxh':
-            l = min(model_pi, key=lambda x: x[0])[0]
-            u = max(model_pi, key=lambda x: x[1])[1]
-            return [Interval(l,u)]
+          l = min(model_pi, key=lambda x: x[0])[0]
+          u = max(model_pi, key=lambda x: x[1])[1]
+          return [Interval(l,u)]
         
