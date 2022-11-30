@@ -8,6 +8,7 @@ from tqdm import tqdm
 from torchmetrics.functional import accuracy
 from classification import ProbabilityAccumulator as ProbAccum
 from scipy.stats.mstats import mquantiles
+import numdifftools as nd
 import pdb
 
 class ConformalizedES:
@@ -441,93 +442,122 @@ class CES_regression(ConformalizedES):
             best_loss = np.min(self.val_loss_history)
             best_model = self.model_list[np.argmin(self.val_loss_history)]
             test_val_loss_history = self.val_loss_history
-            print(best_loss)
-            print(best_model)
+            # print(best_loss)
+            # print(best_model)
             
             return best_loss, best_model, test_val_loss_history
 
+
+
         else:
           knots = self.find_knots(test_inputs)
-          # count the number of model appearances in knots, if model indice only appeared once, it will be the two 'extreme' models.
-          # If the model indice appeared more than once, it will be a model appeared in the middle. 
-          line_appearance_count = {}
-          map_mod_to_knots = {}
-          for knot in knots:
-            mod_idx_i = knot['mod1']
-            if mod_idx_i in line_appearance_count:
-              line_appearance_count[mod_idx_i] += 1
-            else:
-              line_appearance_count[mod_idx_i] = 1
-            if mod_idx_i in map_mod_to_knots:
-              map_mod_to_knots[mod_idx_i].append(knot)
-            else:
-              map_mod_to_knots[mod_idx_i] = [knot]
+          knots_with_loss_params = []
 
-            mod_idx_j = knot['mod2']
-            if mod_idx_j in line_appearance_count:
-              line_appearance_count[mod_idx_j] += 1
-            else:
-              line_appearance_count[mod_idx_j] = 1
-            if mod_idx_j in map_mod_to_knots:
-              map_mod_to_knots[mod_idx_j].append(knot)
-            else:
-              map_mod_to_knots[mod_idx_j] = [knot]
-            
-            
-          start_or_end = [k for (k,v) in line_appearance_count.items() if v==1]
-
-          if map_mod_to_knots[start_or_end[0]][0]['intersect'] < map_mod_to_knots[start_or_end[1]][0]['intersect']:
-            start_idx = start_or_end[0]
-            end_idx = start_or_end[1]
-          else:
-            start_idx = start_or_end[1]
-            end_idx = start_or_end[0]
+          # find the loss function parametrs of the knots
+          for k in knots: 
+            k['loss_params_1'] = [self.preds[k['mod1']], self.total_val_loss_history[k['mod1']]]        
+            k['loss_params_2'] = [self.preds[k['mod2']], self.total_val_loss_history[k['mod2']]]
+            knots_with_loss_params.append(k)
           
-          best_models.append({
-              'model': self.model_list[start_idx],
-              'knot_lower': -np.inf,
-              'knot_upper': map_mod_to_knots[start_idx][0]['intersect']
-          })
+          # sort knots from the smallest (of the imaginary response value) to the largest 
+          sorted_knots_with_loss_params = sorted(knots_with_loss_params, key=lambda x: x['intersect']) 
 
-          curr_idx = start_idx
-          seen_knots = []
-          lower = map_mod_to_knots[start_idx][0]['intersect']
-          while True:
-            if curr_idx == start_idx:
-              knot = map_mod_to_knots[curr_idx][0]
-              seen_knots.append(knot)
-            else:
-              knots = map_mod_to_knots[curr_idx]
-              knot = None
-              for knot_candidate in knots:
-                if knot_candidate not in seen_knots:
-                  knot = knot_candidate
-              if knot == None:
-                break 
-              seen_knots.append(knot)
+          def find_gradients(knot):
+              l1 = lambda y: y**2 - 2*y*knot['loss_params_1'][0] + knot['loss_params_1'][0]**2 + knot['loss_params_1'][1]
+              l2 = lambda y: y**2 - 2*y*knot['loss_params_2'][0] + knot['loss_params_2'][0]**2 + knot['loss_params_2'][1]          
+              grad1 = nd.Gradient(l1)([knot['intersect']])
+              grad2 = nd.Gradient(l2)([knot['intersect']])     
+              return grad1, grad2       
 
-              y = knot['intersect']
+
+          for (idx, knot) in enumerate(sorted_knots_with_loss_params): 
+            
+            # locate the starting knot, find the associated best models by comparing gradients
+            if idx == 0:
+              start_knot = sorted_knots_with_loss_params[0]
+              grad1, grad2 = find_gradients(start_knot)
+
+              if grad1 * grad2 < 0:
+                if grad1 > 0:
+                  start_idx = start_knot['mod1']
+                else: 
+                  start_idx = start_knot['mod2']
+                        
+              elif grad1 * grad2 > 0:
+                if grad1 > grad2: 
+                  start_idx = start_knot['mod1']
+                else:
+                  start_idx = start_knot['mod2']
+
+              elif grad1 * grad2 == 0:
+                print('zero gradient, program breaks')
+                break
+              
               best_models.append({
-                'model': self.model_list[curr_idx],
-                'knot_lower': lower,
-                'knot_upper': y
-              })
-              lower = y
+                    'model': self.model_list[start_idx],
+                    'knot_lower': -np.inf,
+                    'knot_upper': start_knot['intersect']
+                    }) 
+              
+              curr_idx = start_idx
+            
+            # find the best models for the middle knots 
+            elif idx > 0 and idx < len(sorted_knots_with_loss_params): 
 
-            next_idx = None
-            for idx in [knot['mod1'], knot['mod2']]:
-              if idx != curr_idx:
-                next_idx = idx 
-            curr_idx = next_idx 
+              # if multiple intersections at one knot (rare case, to do )
+              if sorted_knots_with_loss_params[idx-1]['intersect'] == sorted_knots_with_loss_params[idx]['intersect']:
+                curr_knot = sorted_knots_with_loss_params[idx-1]
+                grad1, grad2 = find_gradients(curr_knot)
+                print('need to add')
+                break
+                ####### TO COMPLETE ########
+              
+              else:
+                assert curr_idx not in sorted_knots_with_loss_params[idx-1], "Disconnected lower bounds, check sorted_knots_with_loss_params index"
+
+                lower = sorted_knots_with_loss_params[idx-1]['intersect']
+                upper = sorted_knots_with_loss_params[idx]['intersect']
+
+                next_idx = None
+                for mod_idx in [sorted_knots_with_loss_params[idx-1]['mod1'], sorted_knots_with_loss_params[idx-1]['mod2']]:
+                  
+                  if mod_idx != curr_idx:
+                    next_idx = mod_idx
+                    best_models.append({
+                        'model': self.model_list[mod_idx],
+                        'knot_lower': lower,
+                        'knot_upper': upper
+                        })
+                    
+                curr_idx = next_idx
+
+          # locate the ending knot, find the associated best models by comparing gradients
+          end_knot = sorted_knots_with_loss_params[-1]
+          grad1, grad2 = find_gradients(end_knot)
+
+          if grad1 * grad2 < 0:
+            if grad1 < 0:
+              end_idx = end_knot['mod1']
+            else: 
+              end_idx = end_knot['mod2']
+                    
+          elif grad1 * grad2 > 0:
+            if grad1 < grad2: 
+              end_idx = end_knot['mod1']
+            else:
+              end_idx = end_knot['mod2']
+
+          elif grad1 * grad2 == 0:
+            print('zero gradient, program breaks')
           
-          knot = map_mod_to_knots[end_idx][0]
           best_models.append({
-              'model': self.model_list[end_idx],
-              'knot_lower': knot['intersect'],
-              'knot_upper': np.inf
-          })
+                'model': self.model_list[end_idx],
+                'knot_lower': end_knot['intersect'],
+                'knot_upper': np.inf
+                }) 
 
-          print(f"elapse time (selecting best models):{time.time() - start_time}")
+        print(f"elapse time (selecting best models):{time.time() - start_time}")
+        # print('best mods {}'.format(best_models))
+        return best_models      
 
-          return best_models
 
