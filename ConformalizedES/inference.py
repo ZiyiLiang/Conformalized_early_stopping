@@ -11,11 +11,11 @@ from sympy import *
 
 
 class Conformal_PSet:
-    '''
+    """
     Class for computing marginal or label conditional conformal prediction sets.
-    '''
+    """
     def __init__(self, net, device, cal_loader, n_classes, model_list, alpha, 
-                 verbose = True, progress = True, random_state = 2023) -> None:
+                 verbose = True, progress = True, lc=True, random_state = 2023) -> None:
         self.net = net
         self.device = device
         self.cal_loader = cal_loader
@@ -24,6 +24,7 @@ class Conformal_PSet:
         self.alpha = alpha
         self.verbose = verbose
         self.progress = progress
+        self.lc = lc    # Whether to compute label conditional coverage
         self.random_state = random_state
 
         if self.verbose:
@@ -51,7 +52,8 @@ class Conformal_PSet:
     def _calibrate_alpha(self):
         n_model = len(self.model_list)
         alpha_calibrated = np.full((n_model,), -1.0)
-        alpha_calibrated_lc = np.full((n_model,self.n_classes), -1.0)
+        if self.lc:
+            alpha_calibrated_lc = np.full((n_model,self.n_classes), -1.0)
         
         if self.progress:
             iterator = tqdm(range(n_model))
@@ -77,25 +79,29 @@ class Conformal_PSet:
             # Use all calibration data to calibrate for the marginal case
             alpha_calibrated[model_idx] = self._calibrate_alpha_single(p_hat_cal, cal_labels)
             
-            # Use only calibration data with specified label to calibrate alpha for label conditional case
-            for label in range(self.n_classes):
-                idx = cal_labels == label
-                alpha_calibrated_lc[model_idx][label] = self._calibrate_alpha_single(p_hat_cal[idx], cal_labels[idx])
+            if self.lc:
+                # Use only calibration data with specified label to calibrate alpha for label conditional case
+                for label in range(self.n_classes):
+                    idx = cal_labels == label
+                    assert np.sum(np.array(idx)) > 0, "Need at least 1 data point for each label for label-conditional coverage!"
+                    alpha_calibrated_lc[model_idx][label] = self._calibrate_alpha_single(p_hat_cal[idx], cal_labels[idx])
 
         self.alpha_calibrated = alpha_calibrated
-        self.alpha_calibrated_lc = alpha_calibrated_lc
+
+        if self.lc:
+            self.alpha_calibrated_lc = alpha_calibrated_lc
 
         return None
 
 
 
     def pred_set(self, test_inputs, best_model, marginal=True):
-        '''
+        """
         Calculate the marginal or label conditional prediction sets
-        '''
+        """
         n_test = len(test_inputs)
         assert len(best_model) == n_test and len(best_model[0]) == self.n_classes, \
-               'Model list should have size of (n_test, n_class), reshape if needed.'
+               "Model list should have size of (n_test, n_class), reshape if needed."
         
         if self.progress:
             iterator = tqdm(range(n_test))
@@ -112,9 +118,9 @@ class Conformal_PSet:
 
 
     def _pred_set_single(self, test_input, test_idx, best_model, marginal=True):
-        '''
+        """
         Calculate the split conformal prediction sets for a single test point 
-        '''
+        """
         pred_set = []
         for label in range(self.n_classes):
             model_path = best_model[label]
@@ -122,7 +128,7 @@ class Conformal_PSet:
             try:
                 model_idx = self.model_list.index(model_path)
             except ValueError:
-                print('Can not find the best model from the model list.')
+                print("Can not find the best model from the model list.")
                 raise
 
             self.net.load_state_dict(th.load(model_path))
@@ -144,9 +150,9 @@ class Conformal_PSet:
 
 
 class Conformal_PVals:
-    '''
+    """
     Class for computing conformal p-values for any test set
-    '''
+    """
     def __init__(self, net, device, cal_loader, model_list,
                  verbose = True, progress = True, random_state = 2023) -> None:
         self.net = net
@@ -204,9 +210,9 @@ class Conformal_PVals:
 
 
     def _compute_pval_single(self, test_input, best_model):
-        '''
+        """
         Calculate the conformal p-value for a single test point 
-        '''
+        """
         try:
             model_idx = self.model_list.index(best_model)
         except ValueError:
@@ -245,9 +251,9 @@ class Conformal_PVals:
 
 
 class Conformal_PI:
-    '''
+    """
     Class for computing prediction intervals for regression.
-    '''
+    """
     def __init__(self, net, device, cal_loader, alpha, 
                  verbose = True, progress = True) -> None:
         self.net = net
