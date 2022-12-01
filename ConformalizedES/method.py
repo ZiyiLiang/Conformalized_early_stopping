@@ -6,10 +6,12 @@ import numpy as np
 import pathlib
 from tqdm import tqdm
 from torchmetrics.functional import accuracy
-from classification import ProbabilityAccumulator as ProbAccum
 from scipy.stats.mstats import mquantiles
 import numdifftools as nd
 import pdb
+
+sys.path.append('../third_party')
+from classification import ProbabilityAccumulator as ProbAccum
 
 class ConformalizedES:
     def __init__(self, net, device, train_loader, batch_size, max_epoch, learning_rate, criterion, optimizer,
@@ -556,7 +558,7 @@ class CES_regression(ConformalizedES):
                 'knot_upper': np.inf
                 }) 
 
-        print(f"elapse time (selecting best models):{time.time() - start_time}")
+        #print(f"elapse time (selecting best models):{time.time() - start_time}")
         # print('best mods {}'.format(best_models))
         return best_models      
 

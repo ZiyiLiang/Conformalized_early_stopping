@@ -195,6 +195,8 @@ class mse_model(nn.Module):
         self.base_model = nn.Sequential(
             nn.Linear(self.in_shape, self.hidden_size),
             nn.ReLU(),
+            nn.Linear(self.hidden_size, self.hidden_size),
+            nn.ReLU(),
             # nn.Dropout(self.dropout),
             # nn.Linear(self.hidden_size, self.hidden_size),
             # nn.ReLU(),
