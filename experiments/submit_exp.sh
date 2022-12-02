@@ -5,7 +5,7 @@ CONF=2
 
 
 if [[ $CONF == 1 ]]; then
-  DATA_LIST=("friedman1") # "custom")
+  DATA_LIST=("friedman1")
   METHOD_LIST=("naive")
   N_TRAIN_LIST=(1000)
   N_CAL_LIST=(50 100 200 500)
@@ -17,21 +17,21 @@ if [[ $CONF == 1 ]]; then
 
 elif [[ $CONF == 2 ]]; then
   DATA_LIST=("friedman1") # "custom")
-  METHOD_LIST=("naive" "benchmark")
-  N_TRAIN_LIST=(100 200 500 1000)
-  N_CAL_LIST=(50 100 200 500)
+  METHOD_LIST=("naive" "benchmark") # "ces")
+  N_TRAIN_LIST=(1000)
+  N_CAL_LIST=(50 100 200 500 1000)
   N_FEAT_LIST=(100)
   NOISE_LIST=(10)
   LR_LIST=(0.05)
   WD_LIST=(0.1)
-  SEED_LIST=$(seq 1 10)
+  SEED_LIST=$(seq 11 50)
 
 fi
 
 
 # Slurm parameters
 MEMO=5G                             # Memory required (2 GB)
-TIME=00-00:10:00                    # Time required (20 m)
+TIME=00-00:20:00                    # Time required (20 m)
 CORE=1                              # Cores required (1)
 
 # Assemble order prefix
@@ -40,15 +40,15 @@ ORDP="sbatch --mem="$MEMO" --nodes=1 --ntasks=1 --cpus-per-task=1 --time="$TIME
 # Create directory for log files
 LOGS="logs"
 mkdir -p $LOGS
-mkdir -p $LOGS"/exp"$CONF
+mkdir -p $LOGS"/exp1"
 
 OUT_DIR="results"
 mkdir -p $OUT_DIR
-mkdir -p $OUT_DIR"/exp"$CONF
+mkdir -p $OUT_DIR"/exp1"
 
 PLOT_DIR="plots"
 mkdir -p $PLOT_DIR
-mkdir -p $PLOT_DIR"/exp"$CONF
+mkdir -p $PLOT_DIR"/exp1"
 
 # Loop over configurations
 for SEED in $SEED_LIST; do
@@ -62,7 +62,7 @@ for SEED in $SEED_LIST; do
                 for WD in "${WD_LIST[@]}"; do
 
 
-                  JOBN="exp"$CONF"/exp"$CONF"_"$DATA"_"$METHOD"_n"$N_TRAIN"_n"$N_CAL"_p"$N_FEAT"_noise"$NOISE"_lr"$LR"_wd"$WD"_seed"$SEED
+                  JOBN="exp1/exp1_"$DATA"_"$METHOD"_n"$N_TRAIN"_n"$N_CAL"_p"$N_FEAT"_noise"$NOISE"_lr"$LR"_wd"$WD"_seed"$SEED
                   OUT_FILE=$OUT_DIR"/"$JOBN".txt"
                   COMPLETE=0
                   #ls $OUT_FILE

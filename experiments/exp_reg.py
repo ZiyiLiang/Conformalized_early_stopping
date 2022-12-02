@@ -77,6 +77,12 @@ num_epochs = 1000
 hidden_layer_size = 100
 optimizer_alg = 'adam'
 
+if (method=="ces"):
+    save_every = 10    # Save model after every few epoches
+else:
+    save_every = 1     # Save model after every few epoches
+    
+
 # Other parameters
 show_plots = True
 num_cond_coverage = 1
@@ -232,7 +238,6 @@ reg_model = CES_regression(mod, device, train_loader, batch_size=batch_size, max
                            optimizer=optimizer, verbose = True)
 
 # Train the model and save snapshots
-save_every = 1    # Save model after every few epoches
 tmp_dir = tempfile.TemporaryDirectory().name
 print("Saving models in {}".format(tmp_dir))
 sys.stdout.flush()
@@ -246,7 +251,7 @@ reg_model.full_train(save_dir = tmp_dir, save_every = save_every)
 def apply_conformal(selected_model):
     results = pd.DataFrame({})
 
-    for alpha in [0.2, 0.1, 0.05]:
+    for alpha in [0.1]:
 
         # store coverage indicator for every test sample
         coverage_BM = []
@@ -277,7 +282,8 @@ def apply_conformal(selected_model):
             coverage_BM.append(response in ci_method[0])
             # evaluate the out of sample losses
             ## load the best model
-            reg_model_tmp = CES_regression(mod, device, train_loader, batch_size=batch_size, max_epoch = num_epochs, learning_rate=lr, val_loader=es_loader,
+            reg_model_tmp = CES_regression(mod, device, train_loader, batch_size=batch_size, max_epoch = num_epochs, learning_rate=lr, 
+                                           val_loader=es_loader,
                                            verbose = False, criterion = MSE_loss, optimizer = optimizer)
             reg_model_tmp.net.load_state_dict(torch.load(selected_model, map_location=device))
             ## compute loss on test samples
@@ -343,14 +349,16 @@ bm_loss, bm_model, loss_history = reg_model.select_model()
 best_epoch = np.argmin(loss_history) + 1
 results_best = apply_conformal(bm_model)
 
-# Test the last model
-full_model = reg_model.model_list[-1]
-results_full = apply_conformal(full_model)
-results_full["method"] = results_full["method"] + "-full"
-
-
-# Combine results
-results = pd.concat([results_best, results_full])
+if (method != "ces"):
+    # Test the last model
+    full_model = reg_model.model_list[-1]
+    results_full = apply_conformal(full_model)
+    results_full["method"] = results_full["method"] + "-full"
+    
+    # Combine results
+    results = pd.concat([results_best, results_full])
+else:
+    results = results_best
 
 print("\nResults:")
 sys.stdout.flush()
