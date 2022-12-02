@@ -93,8 +93,6 @@ print("Output file: {:s}.".format("results/"+outfile_prefix), end="\n")
 # Useful functions #
 ####################
 
-
-
 class PrepareData(Dataset):
 
     def __init__(self, X, Y):
@@ -133,6 +131,16 @@ def plot_loss(train_loss, val_loss, test_loss=None, out_file=None):
 
     plt.show()
 
+def make_dataset(n_samples=1, n_features=10, noise=0, random_state=2022):
+    rng = np.random.default_rng(random_state)
+    X = rng.normal(loc=0.0, scale=1.0, size=(n_samples,n_features))
+    epsilon = rng.normal(loc=0.0, scale=1.0, size=(n_samples,))
+    Y = ((X[:,0]<-1.5)+(X[:,0]>1.5)) + ((X[:,1]<-1.5)+(X[:,1]>1.5)) * ((X[:,2]>-2)*(X[:,2]<2)) + X[:,3] ** 2 - 0.1 * X[:,4] ** 3
+    Y = ( Y  + noise * epsilon ).astype(float) + noise * epsilon
+    return X, Y
+
+
+
 #####################
 # Generate the data #
 #####################
@@ -148,6 +156,8 @@ if data=="friedman1":
     X_all, Y_all = make_friedman1(n_samples=n_samples_tot, n_features=n_features, noise=noise, random_state=seed)
 elif data=="regression":
     X_all, Y_all = make_regression(n_samples=n_samples_tot, n_features=n_features, noise=noise, random_state=seed)
+elif data=="custom":
+    X_all, Y_all = make_dataset(n_samples=n_samples_tot, n_features=n_features, noise=noise, random_state=seed)
 else:
     print("Unknown data distribution!")
     sys.stdout.flush()
