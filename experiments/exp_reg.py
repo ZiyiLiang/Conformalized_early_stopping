@@ -93,14 +93,11 @@ print("Output file: {:s}.".format("results/"+outfile_prefix), end="\n")
 # Useful functions #
 ####################
 
+
+
 class PrepareData(Dataset):
 
-    def __init__(self, X, Y, scale_X=False, scale_Y=False):
-        if scale_X:
-            X = StandardScaler().fit_transform(X)
-        if scale_Y:
-            Y = StandardScaler().fit_transform(Y.reshape((len(Y),1))).flatten()
-
+    def __init__(self, X, Y):
         if not torch.is_tensor(X):
             self.X = torch.from_numpy(X)
         if not torch.is_tensor(Y):
@@ -155,6 +152,10 @@ else:
     print("Unknown data distribution!")
     sys.stdout.flush()
 
+# Scale the data
+X_all = StandardScaler().fit_transform(X_all)
+Y_all = StandardScaler().fit_transform(Y_all.reshape((len(Y_all),1))).flatten()
+
 # Set test data aside
 X, X_test, Y, Y_test = train_test_split(X_all, Y_all, test_size=n_test, random_state=seed)
 
@@ -194,10 +195,10 @@ sys.stdout.flush()
 # Train the model #
 ###################
 
-train_loader = DataLoader(PrepareData(X_train, Y_train, scale_X=True, scale_Y=True), batch_size=batch_size)
-es_loader = DataLoader(PrepareData(X_es, Y_es, scale_X=True, scale_Y=True), batch_size=batch_size, drop_last = True)
-calib_loader = DataLoader(PrepareData(X_cal, Y_cal, scale_X=True, scale_Y=True), batch_size=1, shuffle = False, drop_last=True)
-test_loader = DataLoader(PrepareData(X_test, Y_test, scale_X=True, scale_Y=True), batch_size= 1, shuffle = False)
+train_loader = DataLoader(PrepareData(X_train, Y_train), batch_size=batch_size)
+es_loader = DataLoader(PrepareData(X_es, Y_es), batch_size=batch_size, drop_last = True)
+calib_loader = DataLoader(PrepareData(X_cal, Y_cal), batch_size=1, shuffle = False, drop_last=True)
+test_loader = DataLoader(PrepareData(X_test, Y_test), batch_size= 1, shuffle = False)
 
 # intialize the model
 in_shape = X_train.shape[1]
