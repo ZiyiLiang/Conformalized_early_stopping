@@ -46,7 +46,7 @@ class ConformalizedES:
 
         :return
         """  
-        print_every = self.n_minibatches // 10
+        print_every = np.maximum(1, self.n_minibatches // 10)
         start_time = time.time()
 
         running_loss = 0.0

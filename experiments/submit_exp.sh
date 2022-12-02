@@ -1,41 +1,30 @@
 #!/bin/bash
 
 # Parameters
-CONF=1
+CONF=2
 
 
 if [[ $CONF == 1 ]]; then
-  DATA_LIST=("friedman1")
+  DATA_LIST=("friedman1") # "custom")
   METHOD_LIST=("naive")
   N_TRAIN_LIST=(1000)
   N_CAL_LIST=(50 100 200 500)
-  N_FEAT_LIST=(10 20 50 100)
-  NOISE_LIST=(10 100 1000)
-  LR_LIST=(0.005 0.05)
-  WD_LIST=(0 0.001 0.01 0.1)
+  N_FEAT_LIST=(10 20 100 200)
+  NOISE_LIST=(1 10)
+  LR_LIST=(0.05)
+  WD_LIST=(0 0.01 0.1)
   SEED_LIST=$(seq 1 10)
 
 elif [[ $CONF == 2 ]]; then
-  DATA_LIST=("friedman1")
-  METHOD_LIST=("benchmark" "naive")
-  N_TRAIN_LIST=(1000)
-  N_CAL_LIST=(50 100 200 500 1000 2000)
-  N_FEAT_LIST=(10)
+  DATA_LIST=("friedman1") # "custom")
+  METHOD_LIST=("naive" "benchmark")
+  N_TRAIN_LIST=(100 200 500 1000)
+  N_CAL_LIST=(50 100 200 500)
+  N_FEAT_LIST=(100)
   NOISE_LIST=(10)
-  LR_LIST=(0.005 0.05)
-  WD_LIST=(0 0.001 0.01 0.1)
-  SEED_LIST=$(seq 1 20)
-
-elif [[ $CONF == 3 ]]; then
-  DATA_LIST=("friedman1")
-  METHOD_LIST=("benchmark" "naive")
-  N_TRAIN_LIST=(1000)
-  N_CAL_LIST=(50 100 200)
-  N_FEAT_LIST=(10)
-  NOISE_LIST=(10)
-  LR_LIST=(0.005 0.05)
-  WD_LIST=(0 0.001 0.01 0.1)
-  SEED_LIST=$(seq 1 20)
+  LR_LIST=(0.05)
+  WD_LIST=(0.1)
+  SEED_LIST=$(seq 1 10)
 
 fi
 

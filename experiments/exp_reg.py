@@ -129,7 +129,7 @@ def plot_loss(train_loss, val_loss, test_loss=None, out_file=None):
     if out_file is not None:
         plt.savefig(out_file, bbox_inches='tight')
 
-    plt.show()
+    #plt.show()
 
 def make_dataset(n_samples=1, n_features=10, noise=0, random_state=2022):
     rng = np.random.default_rng(random_state)
@@ -214,7 +214,7 @@ test_loader = DataLoader(PrepareData(X_test, Y_test), batch_size= 1, shuffle = F
 in_shape = X_train.shape[1]
 mod = mse_model(in_shape = in_shape, hidden_size = hidden_layer_size)
 if optimizer_alg == 'adam':
-    optimizer = torch.optim.Adam(mod.parameters(), lr=lr, weight_decay = wd)
+    optimizer = torch.optim.Adam(mod.parameters(), lr=lr, betas=(0,0.1), weight_decay = wd)
 else:
     optimizer = torch.optim.SGD(mod.parameters(), lr=lr, weight_decay = wd)
 
