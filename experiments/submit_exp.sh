@@ -8,11 +8,11 @@ if [[ $CONF == 1 ]]; then
   DATA_LIST=("friedman1")
   METHOD_LIST=("naive")
   N_TRAIN_LIST=(1000)
-  N_CAL_LIST=(100)
-  N_FEAT_LIST=(200)
-  NOISE_LIST=(100)
+  N_CAL_LIST=(50 100 200 500)
+  N_FEAT_LIST=(10 20 50 100 200)
+  NOISE_LIST=(10 100 1000)
   LR_LIST=(0.005)
-  SEED_LIST=$(seq 1 1)
+  SEED_LIST=$(seq 1 10)
 
 fi
 
@@ -33,6 +33,10 @@ mkdir -p $LOGS"/exp"$CONF
 OUT_DIR="results"
 mkdir -p $OUT_DIR
 mkdir -p $OUT_DIR"/exp"$CONF
+
+PLOT_DIR="plots"
+mkdir -p $PLOT_DIR
+mkdir -p $PLOT_DIR"/exp"$CONF
 
 # Loop over configurations
 for DATA in "${DATA_LIST[@]}"; do
@@ -64,7 +68,7 @@ for DATA in "${DATA_LIST[@]}"; do
                   # Print order
                   echo $ORD
                   # Submit order
-                  #$ORD
+                  $ORD
                   # Run command now
                   #./$SCRIPT
                 fi

@@ -31,6 +31,7 @@ class ConformalizedES:
 
         self.acc = False   # Compute accuracy or not
 
+        self.ID = np.random.randint(0, high=sys.maxsize)
 
         if self.verbose:
             print("===== HYPERPARAMETERS =====")
@@ -127,7 +128,7 @@ class ConformalizedES:
                 else:
                     train_loss = self.train_single_epoch(epoch)
 
-            snapshot_path = os.path.join(save_dir, 'model'+str(saving_epoch + 1)+'.pth')
+            snapshot_path = os.path.join(save_dir, 'id'+str(self.ID)+'_model'+str(saving_epoch + 1)+'.pth')
             self.model_list.append(snapshot_path)
             th.save(self.net.state_dict(), snapshot_path)
 
