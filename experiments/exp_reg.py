@@ -229,101 +229,113 @@ sys.stdout.flush()
 reg_model.full_train(save_dir = tmp_dir, save_every = save_every)
 
 
+#############################
+# Apply conformal inference #
+#############################
+
+def apply_conformal(selected_model):
+    results = pd.DataFrame({})
+
+    for alpha in [0.2, 0.1, 0.05]:
+
+        # store coverage indicator for every test sample
+        coverage_BM = []
+        # store size of the prediction interval
+        size_BM = []
+        # store test loss
+        test_losses_BM = []
+        # store prediction intervals for every test sample
+        pi_BM = []
+
+        # initialize
+        C_PI = Conformal_PI(mod, device, calib_loader, alpha)
+
+        print("Applying conformal prediction...")
+        sys.stdout.flush()
+
+        for input, response in tqdm(test_loader):
+            # find prediction interval
+            if (method=="benchmark") or (method=="naive"):
+                ci_method = C_PI.benchmark_ICP(input, selected_model)
+            else:
+                best_models = reg_model.select_model(input)
+                ci_method = C_PI.CES_icp(input, best_models, method = 'cvxh')
+
+            pi_BM.append(ci_method)
+            # find size and coverage indicator
+            size_BM.append(ci_method[0]._measure)
+            coverage_BM.append(response in ci_method[0])
+            # evaluate the out of sample losses
+            ## load the best model
+            reg_model_tmp = CES_regression(mod, device, train_loader, batch_size=batch_size, max_epoch = num_epochs, learning_rate=lr, val_loader=es_loader,
+                                           verbose = False, criterion = MSE_loss, optimizer = optimizer)
+            reg_model_tmp.net.load_state_dict(torch.load(selected_model, map_location=device))
+            ## compute loss on test samples
+            test_loss = reg_model_tmp.get_loss(input, response)
+            test_losses_BM.append(test_loss)
+
+
+        print("Evaluating conditional coverage...")
+        sys.stdout.flush()
+        # store conditional coverage
+        wsc_coverages_BM = []
+
+        # compute conditional coverage
+        for i in tqdm(np.arange(num_cond_coverage)):
+            wsc_coverage = wsc_unbiased(X_test, Y_test, pi_BM, M=100, delta = 0.1)
+            wsc_coverages_BM.append(wsc_coverage)
+
+        ################
+        # Save results #
+        ################
+
+        marg_coverage = np.mean(coverage_BM)
+        cond_coverage = np.mean(wsc_coverages_BM)
+        avg_size = np.mean(size_BM)
+        test_loss = np.mean(test_losses_BM)
+
+        res = pd.DataFrame({
+            'data' : [data],
+            'method' : [method],
+            'n_train' : [n_train],
+            'n_cal' : [n_cal],
+            'n_features' : [n_features],
+            'n_test' : [n_test],
+            'noise' : [noise],
+            'seed' : [seed],
+            'alpha' : [alpha],
+            'marg_coverage' : [marg_coverage],
+            'cond_coverage' : [cond_coverage],
+            'avg_size' : [avg_size],
+            'test_loss' : [test_loss],
+            'best_epoch' : [best_epoch],
+            'optimizer' : [optimizer_alg]
+        })
+
+        results = pd.concat([results, res])
+
+        return results
+
 #########################
-# Select the best model #
+# Conformal inference   #
 #########################
 
 # compute validation loss (burn-out first 20 epochs)
 val_loss = np.mean(reg_model.val_loss_history[-20:])
 
-# Check the best models
+# Test the best model
 bm_loss, bm_model, loss_history = reg_model.select_model()
 best_epoch = np.argmin(loss_history) + 1
+results_best = apply_conformal(bm_model)
 
-#############################
-# Apply conformal inference #
-#############################
-
-results = pd.DataFrame({})
-
-for alpha in [0.2, 0.1, 0.05]:
-
-    # store coverage indicator for every test sample
-    coverage_BM = []
-    # store size of the prediction interval
-    size_BM = []
-    # store test loss
-    test_losses_BM = []
-    # store prediction intervals for every test sample
-    pi_BM = []
-
-    # initialize
-    C_PI = Conformal_PI(mod, device, calib_loader, alpha)
-
-    print("Applying conformal prediction...")
-    sys.stdout.flush()
-
-    for input, response in tqdm(test_loader):
-        # find prediction interval
-        if (method=="benchmark") or (method=="naive"):
-            ci_method = C_PI.benchmark_ICP(input, bm_model)
-        else:
-            best_models = reg_model.select_model(input)
-            ci_method = C_PI.CES_icp(input, best_models, method = 'cvxh')
-
-        pi_BM.append(ci_method)
-        # find size and coverage indicator
-        size_BM.append(ci_method[0]._measure)
-        coverage_BM.append(response in ci_method[0])
-        # evaluate the out of sample losses
-        ## load the best model
-        reg_model_tmp = CES_regression(mod, device, train_loader, batch_size=batch_size, max_epoch = num_epochs, learning_rate=lr, val_loader=es_loader,
-                                       verbose = False, criterion = MSE_loss, optimizer = optimizer)
-        reg_model_tmp.net.load_state_dict(torch.load(bm_model, map_location=device))
-        ## compute loss on test samples
-        test_loss = reg_model_tmp.get_loss(input, response)
-        test_losses_BM.append(test_loss)
+# Test the last model
+full_model = reg_model.model_list[-1]
+results_full = apply_conformal(full_model)
+results_full["method"] = results_full["method"] + "-full"
 
 
-    print("Evaluating conditional coverage...")
-    sys.stdout.flush()
-    # store conditional coverage
-    wsc_coverages_BM = []
-
-    # compute conditional coverage
-    for i in tqdm(np.arange(num_cond_coverage)):
-        wsc_coverage = wsc_unbiased(X_test, Y_test, pi_BM, M=100, delta = 0.1)
-        wsc_coverages_BM.append(wsc_coverage)
-
-    ################
-    # Save results #
-    ################
-
-    marg_coverage = np.mean(coverage_BM)
-    cond_coverage = np.mean(wsc_coverages_BM)
-    avg_size = np.mean(size_BM)
-    test_loss = np.mean(test_losses_BM)
-
-    res = pd.DataFrame({
-        'data' : [data],
-        'method' : [method],
-        'n_train' : [n_train],
-        'n_cal' : [n_cal],
-        'n_features' : [n_features],
-        'n_test' : [n_test],
-        'noise' : [noise],
-        'seed' : [seed],
-        'alpha' : [alpha],
-        'marg_coverage' : [marg_coverage],
-        'cond_coverage' : [cond_coverage],
-        'avg_size' : [avg_size],
-        'test_loss' : [test_loss],
-        'best_epoch' : [best_epoch],
-        'optimizer' : [optimizer_alg]
-    })
-
-    results = pd.concat([results, res])
-
+# Combine results
+results = pd.concat([results_best, results_full])
 
 print("\nResults:")
 sys.stdout.flush()
