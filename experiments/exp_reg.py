@@ -51,7 +51,7 @@ seed = 2022
 if True:
     print ('Number of arguments:', len(sys.argv), 'arguments.')
     print ('Argument List:', str(sys.argv))
-    if len(sys.argv) != 9:
+    if len(sys.argv) != 10:
         print("Error: incorrect number of parameters.")
         quit()
     sys.stdout.flush()
@@ -63,7 +63,8 @@ if True:
     n_features = int(sys.argv[5])
     noise = float(sys.argv[6]) / 100
     lr = float(sys.argv[7])
-    seed = int(sys.argv[8])
+    wd = float(sys.argv[8])
+    seed = int(sys.argv[9])
 
 
 # Fixed data parameters
@@ -73,7 +74,6 @@ n_test = 100
 batch_size = 50
 dropout = 0
 num_epochs = 1000
-wd = 0 #1e-3
 hidden_layer_size = 100
 optimizer_alg = 'adam'
 
@@ -85,7 +85,7 @@ num_cond_coverage = 1
 
 # Output file
 outfile_prefix = "exp"+str(conf) + "/" + "exp" + str(conf) + "_" + str(data) + "_" + method + "_n" + str(n_train) + "_n" + str(n_cal)
-outfile_prefix += "_p" + str(n_features) + "_noise" + str(int(noise*100)) + "_lr" + str(lr) + "_seed" + str(seed)
+outfile_prefix += "_p" + str(n_features) + "_noise" + str(int(noise*100)) + "_lr" + str(lr) + "_wd" + str(wd) + "_seed" + str(seed)
 print("Output file: {:s}.".format("results/"+outfile_prefix), end="\n")
 
 
@@ -313,6 +313,7 @@ def apply_conformal(selected_model):
             'n_test' : [n_test],
             'noise' : [noise],
             'lr' : [lr],
+            'wd' : [wd],
             'seed' : [seed],
             'alpha' : [alpha],
             'marg_coverage' : [marg_coverage],
@@ -324,6 +325,9 @@ def apply_conformal(selected_model):
         })
 
         results = pd.concat([results, res])
+
+        if (show_plots) and (alpha==0.2):
+            plot_loss(reg_model.train_loss_history[5:], reg_model.val_loss_history[5:], test_loss = test_loss, out_file="plots/"+outfile_prefix+".png")
 
     return results
 
@@ -361,7 +365,3 @@ outfile = "results/" + outfile_prefix + ".txt"
 results.to_csv(outfile, index=False)
 print("\nResults written to {:s}\n".format(outfile))
 sys.stdout.flush()
-
-
-#if show_plots:
-#    plot_loss(reg_model.train_loss_history[5:], reg_model.val_loss_history[5:], test_loss = test_loss, out_file="plots/"+outfile_prefix+".png")

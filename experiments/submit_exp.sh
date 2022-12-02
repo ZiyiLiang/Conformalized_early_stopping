@@ -11,7 +11,8 @@ if [[ $CONF == 1 ]]; then
   N_CAL_LIST=(50 100 200 500)
   N_FEAT_LIST=(10 20 50 100)
   NOISE_LIST=(10 100 1000)
-  LR_LIST=(0.005 0.05 0.0005)
+  LR_LIST=(0.005 0.05)
+  WD_LIST=(0 0.001 0.01 0.1)
   SEED_LIST=$(seq 1 10)
 
 elif [[ $CONF == 2 ]]; then
@@ -21,7 +22,8 @@ elif [[ $CONF == 2 ]]; then
   N_CAL_LIST=(50 100 200 500 1000 2000)
   N_FEAT_LIST=(10)
   NOISE_LIST=(10)
-  LR_LIST=(0.005)
+  LR_LIST=(0.005 0.05)
+  WD_LIST=(0 0.001 0.01 0.1)
   SEED_LIST=$(seq 1 20)
 
 elif [[ $CONF == 3 ]]; then
@@ -31,7 +33,8 @@ elif [[ $CONF == 3 ]]; then
   N_CAL_LIST=(50 100 200)
   N_FEAT_LIST=(10)
   NOISE_LIST=(10)
-  LR_LIST=(0.005)
+  LR_LIST=(0.005 0.05)
+  WD_LIST=(0 0.001 0.01 0.1)
   SEED_LIST=$(seq 1 20)
 
 fi
@@ -67,31 +70,33 @@ for SEED in $SEED_LIST; do
           for N_FEAT in "${N_FEAT_LIST[@]}"; do
             for NOISE in "${NOISE_LIST[@]}"; do
               for LR in "${LR_LIST[@]}"; do
+                for WD in "${WD_LIST[@]}"; do
 
 
-                JOBN="exp"$CONF"/exp"$CONF"_"$DATA"_"$METHOD"_n"$N_TRAIN"_n"$N_CAL"_p"$N_FEAT"_noise"$NOISE"_lr"$LR"_seed"$SEED
-                OUT_FILE=$OUT_DIR"/"$JOBN".txt"
-                COMPLETE=0
-                #ls $OUT_FILE
-                if [[ -f $OUT_FILE ]]; then
-                  COMPLETE=1
-                fi
+                  JOBN="exp"$CONF"/exp"$CONF"_"$DATA"_"$METHOD"_n"$N_TRAIN"_n"$N_CAL"_p"$N_FEAT"_noise"$NOISE"_lr"$LR"_wd"$WD"_seed"$SEED
+                  OUT_FILE=$OUT_DIR"/"$JOBN".txt"
+                  COMPLETE=0
+                  #ls $OUT_FILE
+                  if [[ -f $OUT_FILE ]]; then
+                    COMPLETE=1
+                  fi
 
-                if [[ $COMPLETE -eq 0 ]]; then
-                  # Script to be run
-                  SCRIPT="exp_reg.sh $DATA $METHOD $N_TRAIN $N_CAL $N_FEAT $NOISE $LR $SEED"
-                  # Define job name
-                  OUTF=$LOGS"/"$JOBN".out"
-                  ERRF=$LOGS"/"$JOBN".err"
-                  # Assemble slurm order for this job
-                  ORD=$ORDP" -J "$JOBN" -o "$OUTF" -e "$ERRF" "$SCRIPT
-                  # Print order
-                  echo $ORD
-                  # Submit order
-                  $ORD
-                  # Run command now
-                  #./$SCRIPT
-                fi
+                  if [[ $COMPLETE -eq 0 ]]; then
+                    # Script to be run
+                    SCRIPT="exp_reg.sh $DATA $METHOD $N_TRAIN $N_CAL $N_FEAT $NOISE $LR $WD $SEED"
+                    # Define job name
+                    OUTF=$LOGS"/"$JOBN".out"
+                    ERRF=$LOGS"/"$JOBN".err"
+                    # Assemble slurm order for this job
+                    ORD=$ORDP" -J "$JOBN" -o "$OUTF" -e "$ERRF" "$SCRIPT
+                    # Print order
+                    echo $ORD
+                    # Submit order
+                    $ORD
+                    # Run command now
+                    #./$SCRIPT
+                  fi
+                done
               done
             done
           done
