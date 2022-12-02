@@ -72,7 +72,7 @@ n_test = 100
 # Training hyperparameters
 batch_size = 50
 dropout = 0
-num_epochs = 500
+num_epochs = 1000
 wd = 0 #1e-3
 hidden_layer_size = 100
 optimizer_alg = 'adam'
@@ -302,6 +302,7 @@ def apply_conformal(selected_model):
             'n_features' : [n_features],
             'n_test' : [n_test],
             'noise' : [noise],
+            'lr' : [lr],
             'seed' : [seed],
             'alpha' : [alpha],
             'marg_coverage' : [marg_coverage],
@@ -314,7 +315,7 @@ def apply_conformal(selected_model):
 
         results = pd.concat([results, res])
 
-        return results
+    return results
 
 #########################
 # Conformal inference   #
@@ -352,5 +353,5 @@ print("\nResults written to {:s}\n".format(outfile))
 sys.stdout.flush()
 
 
-if show_plots:
-    plot_loss(reg_model.train_loss_history[5:], reg_model.val_loss_history[5:], test_loss = test_loss, out_file="plots/"+outfile_prefix+".png")
+#if show_plots:
+#    plot_loss(reg_model.train_loss_history[5:], reg_model.val_loss_history[5:], test_loss = test_loss, out_file="plots/"+outfile_prefix+".png")

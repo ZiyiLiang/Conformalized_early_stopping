@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Parameters
-CONF="1"
+CONF=1
 
 
 if [[ $CONF == 1 ]]; then
@@ -9,10 +9,30 @@ if [[ $CONF == 1 ]]; then
   METHOD_LIST=("naive")
   N_TRAIN_LIST=(1000)
   N_CAL_LIST=(50 100 200 500)
-  N_FEAT_LIST=(10 20 50 100 200)
+  N_FEAT_LIST=(10 20 50 100)
   NOISE_LIST=(10 100 1000)
-  LR_LIST=(0.005)
+  LR_LIST=(0.005 0.05 0.0005)
   SEED_LIST=$(seq 1 10)
+
+elif [[ $CONF == 2 ]]; then
+  DATA_LIST=("friedman1")
+  METHOD_LIST=("benchmark" "naive")
+  N_TRAIN_LIST=(1000)
+  N_CAL_LIST=(50 100 200 500 1000 2000)
+  N_FEAT_LIST=(10)
+  NOISE_LIST=(10)
+  LR_LIST=(0.005)
+  SEED_LIST=$(seq 1 20)
+
+elif [[ $CONF == 3 ]]; then
+  DATA_LIST=("friedman1")
+  METHOD_LIST=("benchmark" "naive")
+  N_TRAIN_LIST=(1000)
+  N_CAL_LIST=(50 100 200)
+  N_FEAT_LIST=(10)
+  NOISE_LIST=(10)
+  LR_LIST=(0.005)
+  SEED_LIST=$(seq 1 20)
 
 fi
 
@@ -39,9 +59,9 @@ mkdir -p $PLOT_DIR
 mkdir -p $PLOT_DIR"/exp"$CONF
 
 # Loop over configurations
-for DATA in "${DATA_LIST[@]}"; do
-  for METHOD in "${METHOD_LIST[@]}"; do
-    for SEED in $SEED_LIST; do
+for SEED in $SEED_LIST; do
+  for DATA in "${DATA_LIST[@]}"; do
+    for METHOD in "${METHOD_LIST[@]}"; do
       for N_TRAIN in "${N_TRAIN_LIST[@]}"; do
         for N_CAL in "${N_CAL_LIST[@]}"; do
           for N_FEAT in "${N_FEAT_LIST[@]}"; do
