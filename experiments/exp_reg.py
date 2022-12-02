@@ -20,6 +20,8 @@ import matplotlib.pyplot as plt
 import sys
 import tempfile
 
+from scipy.stats.mstats import mquantiles
+
 from sklearn.datasets import make_friedman1, make_regression
 
 import __main__ as main
@@ -78,7 +80,7 @@ hidden_layer_size = 100
 optimizer_alg = 'adam'
 
 if (method=="ces"):
-    save_every = 10    # Save model after every few epoches
+    save_every = 100    # Save model after every few epoches
 else:
     save_every = 1     # Save model after every few epoches
     
@@ -172,8 +174,12 @@ else:
 X_all = StandardScaler().fit_transform(X_all)
 Y_all = StandardScaler().fit_transform(Y_all.reshape((len(Y_all),1))).flatten()
 
+# Find approximate marginal quantiles of Y
+y_hat_min, y_hat_max = mquantiles(Y_all, [0.05,0.95])
+
 # Set test data aside
 X, X_test, Y, Y_test = train_test_split(X_all, Y_all, test_size=n_test, random_state=seed)
+
 
 ##################
 # Split the data #
@@ -263,7 +269,7 @@ def apply_conformal(selected_model):
         pi_BM = []
 
         # initialize
-        C_PI = Conformal_PI(mod, device, calib_loader, alpha)
+        C_PI = Conformal_PI(mod, device, calib_loader, alpha, y_hat_min=y_hat_min, y_hat_max=y_hat_max)
 
         print("Applying conformal prediction...")
         sys.stdout.flush()

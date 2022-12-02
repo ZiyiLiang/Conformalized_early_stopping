@@ -249,13 +249,20 @@ class Conformal_PI:
     Class for computing prediction intervals for regression.
     '''
     def __init__(self, net, device, cal_loader, alpha, 
-                 verbose = True, progress = True) -> None:
+                 verbose = True, progress = True, y_hat_min=None, y_hat_max=None) -> None:
         self.net = net
         self.device = device
         self.cal_loader = cal_loader
         self.alpha = alpha
         self.verbose = verbose
-
+        if y_hat_min is None:
+            self.y_hat_max = -np.inf
+        else:
+            self.y_hat_min = y_hat_min
+        if y_hat_max is None:
+            self.y_hat_max = np.inf
+        else:
+            self.y_hat_max = y_hat_max
 
     def nonconformity_scores(self, output, target) -> float:
         """ Absolute residual as non-conformity score
@@ -280,7 +287,7 @@ class Conformal_PI:
             # input, response = input.to(self.device), response.to(self.device)
             with th.no_grad():
                 # make prediction using the model trained
-                pred = self.net(X_batch)
+                pred = th.clip(self.net(X_batch), self.y_hat_min, self.y_hat_max)
                 # pred = pred.to(self.device)
                 # compute the conformity scores using predictions and the real calibration response
                 score = self.nonconformity_scores(pred, y_batch)
@@ -292,8 +299,8 @@ class Conformal_PI:
         qhat = np.quantile(cal_scores, np.ceil((n_cal+1)*(1-self.alpha))/n_cal, interpolation='higher')
         
         # with th.no_grad():
-        test_pred = self.net(test_inputs)
-        
+        test_pred = th.clip(self.net(test_inputs), self.y_hat_min, self.y_hat_max)
+
         # construct prediction interval for the test point
         pi = [Interval(test_pred - qhat,test_pred + qhat)]
         
@@ -331,7 +338,7 @@ class Conformal_PI:
           
               with th.no_grad():
                   # make prediction 
-                  pred = self.net(input)
+                  pred = th.clip(self.net(input), self.y_hat_min, self.y_hat_max)
               # pred = pred.to(self.device)
               # compute the conformity scores
               score = self.nonconformity_scores(pred, response)
@@ -342,7 +349,7 @@ class Conformal_PI:
           n_cal = len(cal_scores)
           # Get the score quantile
           qhat = np.quantile(cal_scores, np.ceil((n_cal+1)*(1-self.alpha))/n_cal, interpolation='higher')
-          test_pred = self.net(test_inputs).data.numpy()
+          test_pred = th.clip(self.net(test_inputs), self.y_hat_min, self.y_hat_max).data.numpy()
           # original prediction intervals constructed in a standard ICP way
           initial_pi = [test_pred - qhat, test_pred + qhat]
           # print('test_pred {}'.format(test_pred))
