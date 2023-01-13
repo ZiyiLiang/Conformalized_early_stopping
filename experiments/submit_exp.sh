@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Parameters
-CONF=2
+CONF=1
 
 
 if [[ $CONF == 1 ]]; then
@@ -13,7 +13,7 @@ if [[ $CONF == 1 ]]; then
   NOISE_LIST=(1 10)
   LR_LIST=(0.05)
   WD_LIST=(0 0.01 0.1)
-  SEED_LIST=$(seq 1 10)
+  SEED_LIST=$(seq 1 1)
 
 elif [[ $CONF == 2 ]]; then
   DATA_LIST=("friedman1") # "custom")
@@ -81,7 +81,7 @@ for SEED in $SEED_LIST; do
                     # Print order
                     echo $ORD
                     # Submit order
-                    $ORD
+                    #$ORD
                     # Run command now
                     #./$SCRIPT
                   fi

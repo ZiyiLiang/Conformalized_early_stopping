@@ -19,6 +19,7 @@ import pdb
 import matplotlib.pyplot as plt
 import sys
 import tempfile
+import datasets
 
 from scipy.stats.mstats import mquantiles
 
@@ -80,7 +81,7 @@ hidden_layer_size = 100
 optimizer_alg = 'adam'
 
 if (method=="ces"):
-    save_every = 100    # Save model after every few epoches
+    save_every = 1     # Save model after every few epoches
 else:
     save_every = 1     # Save model after every few epoches
     
@@ -137,15 +138,29 @@ def plot_loss(train_loss, val_loss, test_loss=None, out_file=None):
     if out_file is not None:
         plt.savefig(out_file, bbox_inches='tight')
 
-    #plt.show()
+    plt.show()
 
 def make_dataset(n_samples=1, n_features=10, noise=0, random_state=2022):
     rng = np.random.default_rng(random_state)
-    X = rng.normal(loc=0.0, scale=1.0, size=(n_samples,n_features))
+    X = rng.uniform(size=(n_samples,n_features))
     epsilon = rng.normal(loc=0.0, scale=1.0, size=(n_samples,))
-    Y = ((X[:,0]<-1.5)+(X[:,0]>1.5)) + ((X[:,1]<-1.5)+(X[:,1]>1.5)) * ((X[:,2]>-2)*(X[:,2]<2)) + X[:,3] ** 2 - 0.1 * X[:,4] ** 3
-    Y = ( Y  + noise * epsilon ).astype(float) + noise * epsilon
+    beta = np.zeros((n_features,1))
+    beta[0:5] = 1
+    def f(x):
+        return 2 * np.sin(np.pi*x) + np.pi*x        
+    Z = np.dot(X,beta).flatten()
+    Y = f(Z) + epsilon
     return X, Y
+
+def load_dataset(dataname, n_samples=1, n_features=10, noise=0, random_state=2022):
+    base_dataset_path = "data/"
+    X_all, Y_all = datasets.GetDataset(dataname, base_dataset_path)
+    rng = np.random.default_rng(random_state)
+    idx = rng.choice(len(Y_all), size=(n_samples,))
+    X = X_all[idx]
+    Y = Y_all[idx]
+    return X, Y
+
 
 
 
@@ -167,8 +182,7 @@ elif data=="regression":
 elif data=="custom":
     X_all, Y_all = make_dataset(n_samples=n_samples_tot, n_features=n_features, noise=noise, random_state=seed)
 else:
-    print("Unknown data distribution!")
-    sys.stdout.flush()
+    X_all, Y_all = load_dataset(data, n_samples=n_samples_tot, n_features=n_features, noise=noise, random_state=seed)
 
 # Scale the data
 X_all = StandardScaler().fit_transform(X_all)
@@ -226,7 +240,7 @@ test_loader = DataLoader(PrepareData(X_test, Y_test), batch_size= 1, shuffle = F
 in_shape = X_train.shape[1]
 mod = mse_model(in_shape = in_shape, hidden_size = hidden_layer_size)
 if optimizer_alg == 'adam':
-    optimizer = torch.optim.Adam(mod.parameters(), lr=lr, betas=(0,0.1), weight_decay = wd)
+    optimizer = torch.optim.Adam(mod.parameters(), lr=lr, weight_decay = wd)
 else:
     optimizer = torch.optim.SGD(mod.parameters(), lr=lr, weight_decay = wd)
 
@@ -279,7 +293,7 @@ def apply_conformal(selected_model):
             if (method=="benchmark") or (method=="naive"):
                 ci_method = C_PI.benchmark_ICP(input, selected_model)
             else:
-                best_models = reg_model.select_model(input)
+                best_models = reg_model.select_model_new(input)
                 ci_method = C_PI.CES_icp(input, best_models, method = 'cvxh')
 
             pi_BM.append(ci_method)
@@ -338,7 +352,7 @@ def apply_conformal(selected_model):
 
         results = pd.concat([results, res])
 
-        if (show_plots) and (alpha==0.2):
+        if (show_plots) and (alpha==0.1):
             plot_loss(reg_model.train_loss_history[5:], reg_model.val_loss_history[5:], test_loss = test_loss, out_file="plots/"+outfile_prefix+".png")
 
     return results
@@ -351,7 +365,7 @@ def apply_conformal(selected_model):
 val_loss = np.mean(reg_model.val_loss_history[-20:])
 
 # Test the best model
-bm_loss, bm_model, loss_history = reg_model.select_model()
+bm_loss, bm_model, loss_history = reg_model.select_model_new()
 best_epoch = np.argmin(loss_history) + 1
 results_best = apply_conformal(bm_model)
 
