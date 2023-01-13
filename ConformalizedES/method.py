@@ -7,6 +7,7 @@ import pathlib
 from tqdm import tqdm
 from torchmetrics.functional import accuracy
 from scipy.stats.mstats import mquantiles
+from collections import OrderedDict
 import numdifftools as nd
 import pdb
 
@@ -417,10 +418,11 @@ class CES_regression(ConformalizedES):
 
 
 
-    def select_model(self, test_inputs = None):
+    def select_model(self, test_inputs = None, return_time_elapsed = False):
         """Return selected best models and their knot intervals
         Args:
             test_inputs (tensor): test covariates
+            return_time_elapsed (Bool): True for returning time elapsed
 
         Returns:
             list of dictionaries that contains information of the best models: 
@@ -559,8 +561,286 @@ class CES_regression(ConformalizedES):
                 'knot_upper': np.inf
                 }) 
 
-        #print(f"elapse time (selecting best models):{time.time() - start_time}")
-        # print('best mods {}'.format(best_models))
+        time_elapsed = time.time() - start_time
+        # print(f"elapse time (selecting best models using old method):{time_elapsed}")
+        if return_time_elapsed:
+          return best_models, time_elapsed
+      
         return best_models      
+    
+    ################################################ DAC algorithm for selecting models ###########################################
+    
+    def define_parabolas(self, test_inputs): 
+        """Return a dictionary of paths and loss functions (characterized by parameters of parabola functions)
+        Args:
+            test_inputs (tensor): test covariates
+
+        Returns:
+            Dictionaries that contains information of the model path and loss function: 
+            format of the output (Example): {"model_1_path":(a1, b1, c1), "model_2_path":(a2, b2, c2), ...},
+        """
+
+        assert self.model_list, 'Call training function to get the model list first!'
+        assert test_inputs is not None, 'Input test covariates first!'
+        
+        # Store loss functions for each model
+        modidx_params = {}
+        
+        for model_idx, model_path in enumerate(self.model_list):
+            self.net.load_state_dict(th.load(model_path))
+            # Get the total validation loss of each model
+            val_loss = self.total_val_loss_history[model_idx]
+            # Make prediction using the model
+            pred = self.predict(test_inputs).item()
+            
+            def find_params(y_pred, val_loss):
+                return(1.0, -2*y_pred, y_pred**2 + val_loss)
+
+            param = find_params(pred, val_loss)
+            modidx_params[model_path] = param
+        
+        return modidx_params
+     
+        
+    def eval_parabola(self, x, params):
+        a, b, c = params 
+        return a*x**2+b*x+c
+    
+    
+    def intersection(self, params1, params2):
+        """Return the intersection point of two parabolas. In the CES regression case, the answer is either None or unique
+        """
+                
+        a1, b1, c1 = params1
+        a2, b2, c2 = params2
+        
+        assert a1 == a2 # only considering a1=a2=1 cases
+        if b1 != b2:
+            return -(c1-c2)/(b1-b2)
+        else:
+            return None
+
+    def parabola_min_interval(self, params, x1, x2):
+        """Return the minimum value of the given parabola within interval (x1, x2)
+        """
+        a, b, c = params 
+        if -b/(2*a) < x2 and -b/(2*a) > x1:
+            min_val = self.eval_parabola(-b/(2*a), params)
+        else:
+            min_val = min(self.eval_parabola(x1, params), self.eval_parabola(x2, params))
+        return min_val 
+
+    def sign(self, a):
+        return "+" if a >= 0 else "-"    
+    
+    
+    def merge(self, envelope1, envelope2):
+        """Merge step in divide and conquer algorithm
+        Args:
+            envelope1 (OrderedDict): first previous lower envelope
+            envelope2 (OrderedDict): second previous lower envelope
+
+        Returns:
+            A new lower envelope constructed after merging the two previous lower envelopes, must be of the same type as input
+        """        
+        # extract the break points from two previous envelopes and sort them in order
+        bp1 = list(envelope1.keys())
+        bp2 = list(envelope2.keys())
+        breakpoints = sorted(set(bp1 + bp2)) 
+
+        # for convenience, remove the last breakpoint (positive infinity) and deal with it at the end
+        breakpoints.remove(np.inf)
+
+        # create an empty ordered dictionary for the new (merged) lower envelope
+        envelope = OrderedDict()
+
+        # Next, find new lower envelope within each interval constructed by the adjacent breakpoints 
+
+        # set index for calling parabolas in each previous envelope
+        index1 = 0
+        index2 = 0
+
+        # set the initial lower bound
+        prev_x = -np.inf 
+        # iterately use each breakpoint as upper bounds
+        for idx, x in enumerate(breakpoints):
+            # identify the parabola contributing to previous lower envelope within the interval 
+            if x in envelope1: 
+                params1 = envelope1[x]
+                index1 += 1
+                if x not in envelope2:
+                    params2 = envelope2[bp2[index2]]
+                else: 
+                    params2 = envelope2[x]
+                    index2 += 1
+
+            else:
+                assert x in envelope2 
+                params2 = envelope2[x] 
+                index2 += 1
+                params1 = envelope1[bp1[index1]]
+
+            # evaluate the two parabolas identified above at the break point and find their intersection point
+            val1 = self.eval_parabola(x, params1)
+            val2 = self.eval_parabola(x, params2)
+            inter_x = self.intersection(params1, params2)
+
+            if val1 == val2: 
+                val1 = self.parabola_min_interval(params1, prev_x, x)
+                val2 = self.parabola_min_interval(params2, prev_x, x)
+
+            # identify which parabola constructs the new lower envelope within this interval
+            if inter_x is None: 
+                if val1 < val2:
+                    envelope[x] = params1
+                else:
+                    envelope[x] = params2
+            else:     
+                if val1 < val2: 
+                    if inter_x > x or inter_x < prev_x:
+                        envelope[x] = params1
+                    else:
+                        envelope[inter_x] = params2
+                        envelope[x] = params1
+                else:
+                    if inter_x > x or inter_x < prev_x:
+                        envelope[x] = params2
+                    else: 
+                        envelope[inter_x] = params1 
+                        envelope[x] = params2
+        
+            # update lower bound
+            prev_x = x 
+
+        # find the new lower envelope for the last interval (largest breakpoint, infinity), or (negative infinity, infinity) if the previous envelop only consists one parabola
+        params1 = envelope1[np.inf]
+        params2 = envelope2[np.inf]
+        inter_x = self.intersection(params1, params2)
+
+        if len(breakpoints) >= 1:
+            x = breakpoints[-1]
+            val1 = self.eval_parabola(x, params1)
+            val2 = self.eval_parabola(x, params2)
+        else: 
+            a1, b1, c1 = params1
+            a2, b2, c2 = params2 
+            val1 = (-b1/(2*a1), c1) 
+            val2 = (-b2/(2*a2), c2)
+        
+        if inter_x is None: 
+            if val1 < val2: 
+                envelope[np.inf] = params1
+            else:
+                envelope[np.inf] = params2 
+        else:
+            if val1 < val2: 
+                if len(breakpoints) >= 1 and inter_x < x:
+                    envelope[np.inf] = params1 
+                else:
+                    envelope[inter_x] = params1 
+                    envelope[np.inf] = params2
+            else:
+                if len(breakpoints) >= 1 and inter_x < x:
+                    envelope[np.inf] = params2
+                else:
+                    envelope[inter_x] = params2
+                    envelope[np.inf] = params1
+
+        # update the new lower envelope
+        # sort merged envelope
+        envelope = OrderedDict(sorted(envelope.items()))
+        # remove points that are not associated with change of parabolas (breakpoints from previous envelopes)
+        seen  = set()
+        for key, value in list(envelope.items())[::-1]:
+            if value in seen: 
+                envelope.pop(key)
+            else:
+                seen.add(value)
+
+        # print("new envelope:", envelope)  
+        return envelope
+
+    def compute_lower_envelope(self, list_params):
+        """Given a list of parabolas, find the lower envelop by divide and conquer algorithm in O(nlogn)
+        Args:
+            list_params (list): A list of parameters characterizing parabolas (e.g. [(1.0, 0.51, 3), (1.0, 3.11, 2), ...])
+
+        Returns:
+            The lower envelope of the given list of parabolas together with its corresponding upper bound of the interval:
+            format of the output (Example): OrderedDict([(-0.16, (1.0, 0.97, -0.77)), (-0.12, (1.0, -0.16, -0.96), ...)]), 
+            meaning that in the interval (neg infinity, -0.16), the parabola (1.0, 0.97, -0.77) contributes to the lower envelope,and  in the interval (-0.16, -0.12), the parabola (1.0, -0.16, -0.96) contributes to the lower envelope
+        """    
+        num_samples = len(list_params)
+        
+        if num_samples == 1:
+            # single parabola is itself the lower envelope
+            envelope = OrderedDict()
+            envelope[np.inf] = list_params[0]
+        elif num_samples == 0:
+            envelope = OrderedDict()
+        else:
+            envelope1 = self.compute_lower_envelope(list_params[:num_samples//2])
+            envelope2 = self.compute_lower_envelope(list_params[num_samples//2:])
+            envelope = self.merge(envelope1, envelope2) 
+    
+        return envelope
+
+    def select_model_new(self, test_inputs = None, return_time_elapsed = False):
+        """Return selected best models and their associated intervals based on the resulting lower envelope
+        Args:
+            test_inputs (tensor): test covariates
+            return_time_elapsed (Bool): True for returning time elapsed
+
+        Returns:
+            list of dictionaries that contains information of the best models: 
+            format of the output (Example): [{'model': 4, 'knot_lower': 12.5, 'knot_upper':31.5}, 
+                                             {'model': 82,'knot_lower': 31.5, 'knot_upper':99.88}, ...]
+        """
 
 
+        assert self.model_list, 'Call training function to get the model list first!'
+        
+        start_time = time.time()
+        
+        # store the best models
+        best_models = []
+
+        # if burn_out: 
+        #   self.model_list = self.model_list[burn_out:]
+        #   print('number of models {}'.format(len(self.model_list)))
+
+        # Return non-conformal benchmark model if no test data is given
+        if test_inputs is None:
+            best_loss = np.min(self.val_loss_history)
+            best_model = self.model_list[np.argmin(self.val_loss_history)]
+            test_val_loss_history = self.val_loss_history
+            # print(best_loss)
+            # print(best_model)
+            
+            return best_loss, best_model, test_val_loss_history
+
+
+        else:
+            # for each of the saved model, define their associated loss functions and record model paths
+            modidx_params = self.define_parabolas(test_inputs)
+            params = list(modidx_params.values())
+            # find the lower envelope of the parabolas
+            lower_envelope = self.compute_lower_envelope(params)
+            
+            # identify the best models with corresponding intervals using the lower envelope
+            lower = -np.inf
+            for key,value in lower_envelope.items():
+                mod_idx = [k for k, v in modidx_params.items() if v == value]
+                upper = key
+                best_models.append({
+                    'model':mod_idx[0],
+                    'knot_lower':lower,
+                    'knot_upper':upper})
+                lower = upper
+        
+        time_elapsed = time.time() - start_time
+        # print(f"elapse time (selecting best models using old method):{time_elapsed}")
+        if return_time_elapsed:
+          return best_models, time_elapsed
+      
+        return best_models      
