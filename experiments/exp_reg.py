@@ -76,7 +76,7 @@ n_test = 100
 # Training hyperparameters
 batch_size = 50
 dropout = 0
-num_epochs = 1000
+num_epochs = 500
 hidden_layer_size = 100
 optimizer_alg = 'adam'
 
@@ -84,7 +84,7 @@ if (method=="ces"):
     save_every = 1     # Save model after every few epoches
 else:
     save_every = 1     # Save model after every few epoches
-    
+
 
 # Other parameters
 show_plots = True
@@ -147,7 +147,7 @@ def make_dataset(n_samples=1, n_features=10, noise=0, random_state=2022):
     beta = np.zeros((n_features,1))
     beta[0:5] = 1
     def f(x):
-        return 2 * np.sin(np.pi*x) + np.pi*x        
+        return 2 * np.sin(np.pi*x) + np.pi*x
     Z = np.dot(X,beta).flatten()
     Y = f(Z) + epsilon
     return X, Y
@@ -302,7 +302,7 @@ def apply_conformal(selected_model):
             coverage_BM.append(response in ci_method[0])
             # evaluate the out of sample losses
             ## load the best model
-            reg_model_tmp = CES_regression(mod, device, train_loader, batch_size=batch_size, max_epoch = num_epochs, learning_rate=lr, 
+            reg_model_tmp = CES_regression(mod, device, train_loader, batch_size=batch_size, max_epoch = num_epochs, learning_rate=lr,
                                            val_loader=es_loader,
                                            verbose = False, criterion = MSE_loss, optimizer = optimizer)
             reg_model_tmp.net.load_state_dict(torch.load(selected_model, map_location=device))
@@ -374,7 +374,7 @@ if (method != "ces"):
     full_model = reg_model.model_list[-1]
     results_full = apply_conformal(full_model)
     results_full["method"] = results_full["method"] + "-full"
-    
+
     # Combine results
     results = pd.concat([results_best, results_full])
 else:

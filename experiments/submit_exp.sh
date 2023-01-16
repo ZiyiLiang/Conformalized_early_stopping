@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Parameters
-CONF=1
+CONF=10
 
 
 if [[ $CONF == 1 ]]; then
@@ -14,6 +14,17 @@ if [[ $CONF == 1 ]]; then
   LR_LIST=(0.05)
   WD_LIST=(0 0.01 0.1)
   SEED_LIST=$(seq 1 5)
+
+elif [[ $CONF == 10 ]]; then
+  DATA_LIST=("friedman1")
+  METHOD_LIST=("benchmark")
+  N_TRAIN_LIST=(1000)
+  N_CAL_LIST=(100)
+  N_FEAT_LIST=(100)
+  NOISE_LIST=(1)
+  LR_LIST=(0.001)
+  WD_LIST=(0)
+  SEED_LIST=$(seq 1 1)
 
 elif [[ $CONF == 2 ]]; then
   DATA_LIST=("friedman1") # "custom")
@@ -81,9 +92,9 @@ for SEED in $SEED_LIST; do
                     # Print order
                     echo $ORD
                     # Submit order
-                    $ORD
+                    #$ORD
                     # Run command now
-                    #./$SCRIPT
+                    ./$SCRIPT
                   fi
                 done
               done
