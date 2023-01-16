@@ -6,14 +6,14 @@ CONF=1
 
 if [[ $CONF == 1 ]]; then
   DATA_LIST=("friedman1")
-  METHOD_LIST=("naive")
+  METHOD_LIST=("naive" "benchmark" "ces")
   N_TRAIN_LIST=(1000)
   N_CAL_LIST=(50 100 200 500)
   N_FEAT_LIST=(10 20 100 200)
   NOISE_LIST=(1 10)
   LR_LIST=(0.05)
   WD_LIST=(0 0.01 0.1)
-  SEED_LIST=$(seq 1 1)
+  SEED_LIST=$(seq 1 5)
 
 elif [[ $CONF == 2 ]]; then
   DATA_LIST=("friedman1") # "custom")
@@ -81,7 +81,7 @@ for SEED in $SEED_LIST; do
                     # Print order
                     echo $ORD
                     # Submit order
-                    #$ORD
+                    $ORD
                     # Run command now
                     #./$SCRIPT
                   fi
