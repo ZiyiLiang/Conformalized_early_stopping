@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 import sys
 import tempfile
 import datasets
+import models
 
 from scipy.stats.mstats import mquantiles
 
@@ -76,8 +77,8 @@ n_test = 100
 # Training hyperparameters
 batch_size = 50
 dropout = 0
-num_epochs = 500
-hidden_layer_size = 100
+num_epochs = 1000
+hidden_layer_size = 128
 optimizer_alg = 'adam'
 
 if (method=="ces"):
@@ -179,6 +180,10 @@ if data=="friedman1":
     X_all, Y_all = make_friedman1(n_samples=n_samples_tot, n_features=n_features, noise=noise, random_state=seed)
 elif data=="regression":
     X_all, Y_all = make_regression(n_samples=n_samples_tot, n_features=n_features, noise=noise, random_state=seed)
+elif data=="chr":
+    data_model = models.Model_Ex3(p=n_features)
+    X_all = data_model.sample_X(n_samples_tot)
+    Y_all = data_model.sample_Y(X)
 elif data=="custom":
     X_all, Y_all = make_dataset(n_samples=n_samples_tot, n_features=n_features, noise=noise, random_state=seed)
 else:

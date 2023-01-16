@@ -1,19 +1,20 @@
 #!/bin/bash
 
 # Parameters
-CONF=10
+CONF=1
 
 
 if [[ $CONF == 1 ]]; then
   DATA_LIST=("friedman1")
-  METHOD_LIST=("naive" "benchmark" "ces")
+  #METHOD_LIST=("naive" "benchmark" "ces")
+  METHOD_LIST=("naive" "benchmark")
   N_TRAIN_LIST=(1000)
   N_CAL_LIST=(50 100 200 500)
-  N_FEAT_LIST=(10 20 100 200)
-  NOISE_LIST=(1 10)
-  LR_LIST=(0.05)
-  WD_LIST=(0 0.01 0.1)
-  SEED_LIST=$(seq 1 5)
+  N_FEAT_LIST=(100 200 500)
+  NOISE_LIST=(1)
+  LR_LIST=(0.001)
+  WD_LIST=(0)
+  SEED_LIST=$(seq 1 1)
 
 elif [[ $CONF == 10 ]]; then
   DATA_LIST=("friedman1")
@@ -94,7 +95,7 @@ for SEED in $SEED_LIST; do
                     # Submit order
                     #$ORD
                     # Run command now
-                    ./$SCRIPT
+                    #./$SCRIPT
                   fi
                 done
               done
