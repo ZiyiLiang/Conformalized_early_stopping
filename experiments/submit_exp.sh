@@ -5,9 +5,9 @@ CONF=1
 
 
 if [[ $CONF == 1 ]]; then
-  DATA_LIST=("concrete")
-  #METHOD_LIST=("naive" "benchmark" "ces")
-  METHOD_LIST=("naive" "benchmark")
+  DATA_LIST=("concrete" "bike" "bio")
+  METHOD_LIST=("naive" "benchmark" "ces")
+  #METHOD_LIST=("naive" "benchmark")
   N_TRAIN_LIST=(1000)
   N_CAL_LIST=(50 100 200 500)
   N_FEAT_LIST=(100)
