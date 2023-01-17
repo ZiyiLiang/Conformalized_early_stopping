@@ -156,6 +156,8 @@ def load_dataset(dataname, n_samples=1, n_features=10, noise=0, random_state=202
     base_dataset_path = "datasets/"
     X_all, Y_all = datasets.GetDataset(dataname, base_dataset_path)
     rng = np.random.default_rng(random_state)
+    if n_samples > len(Y_all):
+        n_samples = len(Y_all)
     idx = rng.choice(len(Y_all), size=(n_samples,))
     X = X_all[idx]
     Y = Y_all[idx]
@@ -196,7 +198,12 @@ else:
     Y_all = Y_all.flatten()
     if n_samples_tot < len(Y_all):
         _, X_all, _, Y_all = train_test_split(X_all, Y_all, test_size=n_samples_tot, random_state=seed)
-    
+
+if n_samples_tot > len(Y_all):
+    n = len(Y_all) - n_test
+    n_cal = np.round(n*0.25).astype(int)
+    n_es = n_cal
+    n_samples_tot = n + n_test
 
 # Scale the data
 if False:
