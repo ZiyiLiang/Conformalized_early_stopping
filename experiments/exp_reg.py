@@ -19,7 +19,7 @@ import pdb
 import matplotlib.pyplot as plt
 import sys
 import tempfile
-import datasets
+from datasets import datasets
 import models
 
 from scipy.stats.mstats import mquantiles
@@ -75,10 +75,10 @@ if True:
 n_test = 100
 
 # Training hyperparameters
-batch_size = 50
+batch_size = 25
 dropout = 0
-num_epochs = 1000
-hidden_layer_size = 128
+num_epochs = 500
+hidden_layer_size = 64
 optimizer_alg = 'adam'
 
 if (method=="ces"):
@@ -154,7 +154,7 @@ def make_dataset(n_samples=1, n_features=10, noise=0, random_state=2022):
     return X, Y
 
 def load_dataset(dataname, n_samples=1, n_features=10, noise=0, random_state=2022):
-    base_dataset_path = "data/"
+    base_dataset_path = "datasets/"
     X_all, Y_all = datasets.GetDataset(dataname, base_dataset_path)
     rng = np.random.default_rng(random_state)
     idx = rng.choice(len(Y_all), size=(n_samples,))
@@ -178,16 +178,24 @@ n_samples_tot = n_train + n_es + n_cal + n_test
 
 if data=="friedman1":
     X_all, Y_all = make_friedman1(n_samples=n_samples_tot, n_features=n_features, noise=noise, random_state=seed)
+
 elif data=="regression":
     X_all, Y_all = make_regression(n_samples=n_samples_tot, n_features=n_features, noise=noise, random_state=seed)
+
 elif data=="chr":
     data_model = models.Model_Ex3(p=n_features)
     X_all = data_model.sample_X(n_samples_tot)
-    Y_all = data_model.sample_Y(X)
+    Y_all = data_model.sample_Y(X_all)
+
 elif data=="custom":
     X_all, Y_all = make_dataset(n_samples=n_samples_tot, n_features=n_features, noise=noise, random_state=seed)
+    _, X_all, _, Y_all = train_test_split(X_all, Y_all, test_size=n_samples_tot, random_state=seed)
+
 else:
     X_all, Y_all = load_dataset(data, n_samples=n_samples_tot, n_features=n_features, noise=noise, random_state=seed)
+    if n_samples_tot < len(Y_all):
+        _, X_all, _, Y_all = train_test_split(X_all, Y_all, test_size=n_samples_tot, random_state=seed)
+    
 
 # Scale the data
 X_all = StandardScaler().fit_transform(X_all)

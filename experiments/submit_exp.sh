@@ -5,7 +5,7 @@ CONF=1
 
 
 if [[ $CONF == 1 ]]; then
-  DATA_LIST=("friedman1")
+  DATA_LIST=("chr")
   #METHOD_LIST=("naive" "benchmark" "ces")
   METHOD_LIST=("naive" "benchmark")
   N_TRAIN_LIST=(1000)
