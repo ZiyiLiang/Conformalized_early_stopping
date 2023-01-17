@@ -33,6 +33,7 @@ from third_party.classification import *
 from ConformalizedES.method import CES_regression
 from ConformalizedES.networks import mse_model, MSE_loss
 from ConformalizedES.inference import Conformal_PI
+from ConformalizedES import theory
 from third_party.coverage import *
 
 ##############
@@ -45,8 +46,7 @@ conf = 1
 #data = "regression"
 data = "friedman1"
 method = "naive"
-n_train = 1000
-n_cal = 100
+n = 1000
 n_features = 200
 noise = 100
 seed = 2022
@@ -55,20 +55,19 @@ seed = 2022
 if True:
     print ('Number of arguments:', len(sys.argv), 'arguments.')
     print ('Argument List:', str(sys.argv))
-    if len(sys.argv) != 10:
+    if len(sys.argv) != 9:
         print("Error: incorrect number of parameters.")
         quit()
     sys.stdout.flush()
 
     data = sys.argv[1]
     method = sys.argv[2]
-    n_train = int(sys.argv[3])
-    n_cal = int(sys.argv[4])
-    n_features = int(sys.argv[5])
-    noise = float(sys.argv[6]) / 100
-    lr = float(sys.argv[7])
-    wd = float(sys.argv[8])
-    seed = int(sys.argv[9])
+    n = int(sys.argv[3])
+    n_features = int(sys.argv[4])
+    noise = float(sys.argv[5]) / 100
+    lr = float(sys.argv[6])
+    wd = float(sys.argv[7])
+    seed = int(sys.argv[8])
 
 
 # Fixed data parameters
@@ -77,8 +76,8 @@ n_test = 100
 # Training hyperparameters
 batch_size = 25
 dropout = 0
-num_epochs = 500
-hidden_layer_size = 64
+num_epochs = 1000
+hidden_layer_size = 128
 optimizer_alg = 'adam'
 
 if (method=="ces"):
@@ -94,7 +93,7 @@ num_cond_coverage = 1
 # Parse input arguments
 
 # Output file
-outfile_prefix = "exp"+str(conf) + "/" + "exp" + str(conf) + "_" + str(data) + "_" + method + "_n" + str(n_train) + "_n" + str(n_cal)
+outfile_prefix = "exp"+str(conf) + "/" + "exp" + str(conf) + "_" + str(data) + "_" + method + "_n" + str(n)
 outfile_prefix += "_p" + str(n_features) + "_noise" + str(int(noise*100)) + "_lr" + str(lr) + "_wd" + str(wd) + "_seed" + str(seed)
 print("Output file: {:s}.".format("results/"+outfile_prefix), end="\n")
 
@@ -173,8 +172,9 @@ def load_dataset(dataname, n_samples=1, n_features=10, noise=0, random_state=202
 np.random.seed(seed)
 th.manual_seed(seed)
 
+n_cal = np.round(n*0.25).astype(int)
 n_es = n_cal
-n_samples_tot = n_train + n_es + n_cal + n_test
+n_samples_tot = n + n_test
 
 if data=="friedman1":
     X_all, Y_all = make_friedman1(n_samples=n_samples_tot, n_features=n_features, noise=noise, random_state=seed)
@@ -219,14 +219,16 @@ if method=="benchmark":
     X_train, X_escal, Y_train, Y_escal = train_test_split(X, Y, test_size=(n_es + n_cal), random_state=seed)
     # Separate es data
     X_es, X_cal, Y_es, Y_cal = train_test_split(X_escal, Y_escal, test_size=n_cal, random_state=seed)
+    n_train = len(Y_train)
 
-elif (method=="naive") or (method=="ces"):
+elif (method=="theory") or (method=="naive") or (method=="ces"):
     # Separate training data
     X_train, X_escal, Y_train, Y_escal = train_test_split(X, Y, test_size=(n_cal), random_state=seed)
     X_es = X_escal
     Y_es = Y_escal
     X_cal = X_escal
     Y_cal = Y_escal
+    n_train = len(Y_train)
 
 else:
     print("Unknown method!")
@@ -298,14 +300,21 @@ def apply_conformal(selected_model):
         pi_BM = []
 
         # initialize
-        C_PI = Conformal_PI(mod, device, calib_loader, alpha, y_hat_min=y_hat_min, y_hat_max=y_hat_max)
+        if method=="theory":
+            T = len(reg_model.model_list)
+            alpha_2 = theory.inv_hybrid(T, n_cal, alpha)
+            alpha_2 = np.clip(alpha_2, 1.0/n_cal, 1)
+        else:
+            alpha_2 = alpha
+
+        C_PI = Conformal_PI(mod, device, calib_loader, alpha_2, y_hat_min=y_hat_min, y_hat_max=y_hat_max)
 
         print("Applying conformal prediction...")
         sys.stdout.flush()
 
         for input, response in tqdm(test_loader):
             # find prediction interval
-            if (method=="benchmark") or (method=="naive"):
+            if (method=="benchmark") or (method=="naive") or (method=="theory"):
                 ci_method = C_PI.benchmark_ICP(input, selected_model)
             else:
                 best_models = reg_model.select_model_new(input)
@@ -348,6 +357,7 @@ def apply_conformal(selected_model):
         res = pd.DataFrame({
             'data' : [data],
             'method' : [method],
+            'n' : [n],
             'n_train' : [n_train],
             'n_cal' : [n_cal],
             'n_features' : [n_features],
@@ -357,6 +367,7 @@ def apply_conformal(selected_model):
             'wd' : [wd],
             'seed' : [seed],
             'alpha' : [alpha],
+            'alpha_2' : [alpha_2],
             'marg_coverage' : [marg_coverage],
             'cond_coverage' : [cond_coverage],
             'avg_size' : [avg_size],
