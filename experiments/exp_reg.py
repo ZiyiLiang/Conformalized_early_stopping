@@ -193,6 +193,7 @@ elif data=="custom":
 
 else:
     X_all, Y_all = load_dataset(data, n_samples=n_samples_tot, n_features=n_features, noise=noise, random_state=seed)
+    Y_all = Y_all.flatten()
     if n_samples_tot < len(Y_all):
         _, X_all, _, Y_all = train_test_split(X_all, Y_all, test_size=n_samples_tot, random_state=seed)
     
