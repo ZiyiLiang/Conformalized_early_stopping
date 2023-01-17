@@ -198,8 +198,9 @@ else:
     
 
 # Scale the data
-X_all = StandardScaler().fit_transform(X_all)
-Y_all = StandardScaler().fit_transform(Y_all.reshape((len(Y_all),1))).flatten()
+if False:
+    X_all = StandardScaler().fit_transform(X_all)
+    Y_all = StandardScaler().fit_transform(Y_all.reshape((len(Y_all),1))).flatten()
 
 # Find approximate marginal quantiles of Y
 y_hat_min, y_hat_max = mquantiles(Y_all, [0.05,0.95])
