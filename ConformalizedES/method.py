@@ -200,7 +200,7 @@ class CES_oneClass(ConformalizedES):
                          val_loader, verbose, progress)
         
         # No need to compute accuracy
-        self.acc = True
+        self.acc = False
 
     def select_model(self, test_inputs = None):
         """ Return the indices of the best models from the model list for any test set
