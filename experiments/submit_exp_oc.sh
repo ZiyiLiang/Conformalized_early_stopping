@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Parameters
+N_DATA_LIST=(200 300 400 500)
+LR_LIST=(0.1 0.01)
+EPOCH_LIST=(100 200)
+SEED_LIST=$(seq 1 25)
+
+
+# Slurm parameters
+MEMO=3G                             # Memory required (3 GB)
+TIME=00-01:00:00                    # Time required (60 m)
+CORE=1                              # Cores required (1)
+
+# Assemble order prefix
+ORDP="sbatch --mem="$MEMO" --nodes=1 --ntasks=1 --cpus-per-task=1 --time="$TIME
+
+# Create directory for log files
+LOGS="logs"
+mkdir -p $LOGS
+mkdir -p $LOGS"/oc"
+
+OUT_DIR="results"
+mkdir -p $OUT_DIR
+mkdir -p $OUT_DIR"/oc"
+
+# Loop over configurations and chromosomes
+for SEED in $SEED_LIST; do
+  for N_DATA in "${N_DATA_LIST[@]}"; do
+    for LR in "${LR_LIST[@]}"; do
+      for EPOCH in "${EPOCH_LIST[@]}"; do
+        JOBN="oc/""_ndata"$N_CAL"_lr"$LR"_epoch"$EPOCH"_seed"$SEED
+        OUT_FILE=$OUT_DIR"/"$JOBN".txt"
+        COMPLETE=0
+        #ls $OUT_FILE
+        if [[ -f $OUT_FILE ]]; then
+        COMPLETE=1
+        fi
+
+        if [[ $COMPLETE -eq 0 ]]; then
+        # Script to be run
+        SCRIPT="exp_oc.sh $N_DATA $LR $EPOCH $SEED"
+        # Define job name for this chromosome
+        OUTF=$LOGS"/"$JOBN".out"
+        ERRF=$LOGS"/"$JOBN".err"
+        # Assemble slurm order for this job
+        ORD=$ORDP" -J "$JOBN" -o "$OUTF" -e "$ERRF" "$SCRIPT
+        # Print order
+        echo $ORD
+        # Submit order
+        $ORD
+        fi
+      done
+    done
+  done
+done
