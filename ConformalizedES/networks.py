@@ -42,7 +42,9 @@ class SimpleConvolutionalNetwork(nn.Module):
         Predict probabilities given any input data
         """
         self.eval()
-       
+        if len(inputs.shape) ==3:
+            inputs = inputs[None]
+            
         get_prob = nn.Softmax(dim = 1)
         with th.no_grad():
             logits = self(inputs)    # Assume inputs are already on the correct device

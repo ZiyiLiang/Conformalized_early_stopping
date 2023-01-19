@@ -16,7 +16,7 @@ class Conformal_PSet:
     Class for computing marginal or label conditional conformal prediction sets.
     '''
     def __init__(self, net, device, cal_loader, n_classes, model_list, alpha, 
-                 verbose = True, progress = True, random_state = 2023) -> None:
+                 verbose = True, progress = True, lc=True, random_state = 2023) -> None:
         self.net = net
         self.device = device
         self.cal_loader = cal_loader
@@ -25,6 +25,7 @@ class Conformal_PSet:
         self.alpha = alpha
         self.verbose = verbose
         self.progress = progress
+        self.lc = lc       # compute label conditional set or not 
         self.random_state = random_state
 
         if self.verbose:
@@ -80,10 +81,11 @@ class Conformal_PSet:
             # Use all calibration data to calibrate for the marginal case
             alpha_calibrated[model_idx] = self._calibrate_alpha_single(p_hat_cal, cal_labels)
             
-            # Use only calibration data with specified label to calibrate alpha for label conditional case
-            for label in range(self.n_classes):
-                idx = cal_labels == label
-                alpha_calibrated_lc[model_idx][label] = self._calibrate_alpha_single(p_hat_cal[idx], cal_labels[idx])
+            if self.lc:
+                # Use only calibration data with specified label to calibrate alpha for label conditional case
+                for label in range(self.n_classes):
+                    idx = cal_labels == label
+                    alpha_calibrated_lc[model_idx][label] = self._calibrate_alpha_single(p_hat_cal[idx], cal_labels[idx])
 
         self.alpha_calibrated = alpha_calibrated
         self.alpha_calibrated_lc = alpha_calibrated_lc
@@ -99,7 +101,12 @@ class Conformal_PSet:
         n_test = len(test_inputs)
         assert len(best_model) == n_test and len(best_model[0]) == self.n_classes, \
                'Model list should have size of (n_test, n_class), reshape if needed.'
-        
+
+        # if label conditional alpha is not calibrated in initialization stage, cannot compute lc psets
+        if not self.lc: 
+            assert marginal==True, 'Cannot compute label-conditional prediction set, initialized with\
+                                                without setting the label-conditional flag on!'
+
         if self.progress:
             iterator = tqdm(range(n_test))
         else:
