@@ -245,7 +245,7 @@ best_loss_naive, best_model_naive, test_val_loss_history_naive = CES_mc_ces.sele
 pset_m_naive= C_PSet_ces.pred_set(inputs, [[best_model_naive]*n_classes]*len(inputs), marginal=True)
 results_naive = eval_m_psets(pset_m_naive, labels.numpy())
 results_naive["Method"] = "Naive"
-results_bm["Alpha"] = alpha
+results_naive["Alpha"] = alpha
 results = pd.concat([results, results_naive])
 
 
@@ -257,8 +257,8 @@ C_PSet_correct = Conformal_PSet(net_ces, device, escal_loader_ces, n_classes, mo
                            alpha_correct,lc=False,random_state = seed)
 pset_m_theory= C_PSet_correct.pred_set(inputs, [[best_model_naive]*n_classes]*len(inputs), marginal=True)
 results_theory = eval_m_psets(pset_m_theory, labels.numpy())
-results_naive["Method"] = "Theory"
-results_bm["Alpha"] = alpha_correct
+results_theory["Method"] = "Theory"
+results_theory["Alpha"] = alpha_correct
 results = pd.concat([results, results_theory])
 
 
@@ -267,8 +267,8 @@ print('Computing full training benchmark Psets for {:d} test points...'.format(n
 full_model = model_list_ces[-1]
 pset_m_full= C_PSet_ces.pred_set(inputs, [[full_model]*n_classes]*len(inputs), marginal=True)
 results_full = eval_m_psets(pset_m_full, labels.numpy())
-results_naive["Method"] = "Full Training"
-results_bm["Alpha"] = alpha
+results_full["Method"] = "Full Training"
+results_full["Alpha"] = alpha
 results = pd.concat([results, results_full])
 
 #------------ CES ------------------#
@@ -276,8 +276,8 @@ print('Computing CES Psets for {:d} test points...'.format(n_test_samples))
 best_loss_ces, best_model_ces, test_val_loss_history_ces = CES_mc_ces.select_model(inputs)
 pset_m_ces= C_PSet_ces.pred_set(inputs, best_model_ces, marginal=True)
 results_ces = eval_m_psets(pset_m_ces, labels.numpy())
-results_naive["Method"] = "CES"
-results_bm["Alpha"] = alpha
+results_ces["Method"] = "CES"
+results_ces["Alpha"] = alpha
 results = pd.concat([results, results_ces])
 
 

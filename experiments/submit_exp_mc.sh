@@ -1,21 +1,21 @@
 #!/bin/bash
 
 # Parameters
-N_DATA_LIST=(200 500 1000 2000 4000)
-LR_LIST=(0.001)
-EPOCH_LIST=(20 50)
-SEED_LIST=$(seq 1 50)
+N_DATA_LIST=(200 500 1000 2000)
+LR_LIST=(0.01 0.001)
+EPOCH_LIST=(20 50 100)
+SEED_LIST=$(seq 1 100)
 
 # test job
 #N_DATA_LIST=(200)
 #LR_LIST=(0.001)
 #EPOCH_LIST=(10)
-#SEED_LIST=$(seq 1 2) 
+#dSEED_LIST=$(seq 1 2) 
 
 
 # Slurm parameters
 MEMO=12G                             # Memory required (12 GB)
-TIME=00-00:30:00                    # Time required (60 m)
+TIME=00-03:00:00                    # Time required (60 m)
 CORE=1                              # Cores required (1)
 
 # Assemble order prefix
@@ -43,7 +43,7 @@ for SEED in $SEED_LIST; do
 
         if [[ $COMPLETE -eq 0 ]]; then
         # Script to be run
-        SCRIPT="exp_oc.sh $N_DATA $LR $EPOCH $SEED"
+        SCRIPT="exp_mc.sh $N_DATA $LR $EPOCH $SEED"
         # Define job name for this chromosome
         OUTF=$LOGS"/"$JOBN".out"
         ERRF=$LOGS"/"$JOBN".err"

@@ -183,9 +183,9 @@ class ConformalizedES:
     def get_loss(self, inputs, targets):
         self.net.eval()
         inputs, targets = inputs.to(self.device), targets.to(self.device)
-
+      
         with th.no_grad():
-            outputs = self.net(inputs)
+            outputs = self.net(inputs)	
             loss = self.criterion(outputs, inputs, targets)
 
         # NOTE. Careful: the variable loss is the loss averaged over all data points in the batch
@@ -292,7 +292,7 @@ class CES_multiClass(ConformalizedES):
                 val_loss = self.val_loss_history[model_idx]
                 for test_idx, test_input in enumerate(tqdm(test_inputs)):
                     for label in range(self.n_classes):
-                        test_loss = self.get_loss(test_input[None], th.full((1,), label))
+                        test_loss = self.get_loss(test_input[None], th.full((1,), label, dtype=th.long))
                         test_val_loss = (val_loss * n_val + test_loss.item()) / (n_val + 1)
 
                         # Update the validation test loss history
