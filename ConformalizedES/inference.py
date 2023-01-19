@@ -4,6 +4,7 @@ import torch as th
 import numpy as np
 import pdb
 import pathlib
+import sys
 from tqdm import tqdm
 from classification import ProbabilityAccumulator as ProbAccum
 from scipy.stats.mstats import mquantiles
@@ -28,9 +29,11 @@ class Conformal_PSet:
 
         if self.verbose:
             print('Calibrating each model in the list...')
+            sys.stdout.flush()
         self._calibrate_alpha()
         if self.verbose:
             print('Initialization done!')
+            sys.stdout.flush()
 
     def _calibrate_alpha_single(self, p_hat_cal, cal_labels):
         n_cal = len(cal_labels)
@@ -107,6 +110,7 @@ class Conformal_PSet:
             pred_sets.append(self._pred_set_single(test_inputs[i][None], i, best_model[i], marginal))
         if True:
             print("Finished computing {} prediction sets for {} test points.".format(['label conditional', 'marginal'][marginal], n_test))
+            sys.stdout.flush()
         return list(pred_sets)
 
 
@@ -159,9 +163,12 @@ class Conformal_PVals:
 
         if self.verbose:
             print('Calibrating each model in the list...')
+            sys.stdout.flush()
         self._calibrate_scores()
         if self.verbose:
             print('Initialization done!')
+            sys.stdout.flush()
+
     
 
     
@@ -184,23 +191,6 @@ class Conformal_PVals:
 
             self.cal_scores[model_idx] = scores
     
-
-
-    # def _get_vt_scores_single(self, test_input, model_path):
-    #     """ Get the scores of validation set and a single test point by a specific model
-    #     """
-    #     cal_scores = []
-
-    #     self.net.load_state_dict(th.load(model_path))
-
-    #     # Compute the anomaly scores for calibration set
-    #     for inputs, _ in self.cal_loader:
-    #         cal_scores.append(self.net.get_anomaly_scores(inputs))
-    #     # Compute the anomaly score for the test point
-    #     test_score = self.net.get_anomaly_scores(test_input)
-
-    #     return cal_scores, test_score
-
 
 
     def _compute_pval_single(self, test_input, best_model):
@@ -240,6 +230,7 @@ class Conformal_PVals:
 
         if self.verbose:
             print("Finished computing p-values for {} test points.".format(n_test))
+            sys.stdout.flush()
         return list(pvals)
 
 

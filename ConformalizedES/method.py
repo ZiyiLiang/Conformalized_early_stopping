@@ -32,7 +32,7 @@ class ConformalizedES:
 
         self.acc = False   # Compute accuracy or not
 
-        self.ID = np.random.randint(0, high=sys.maxsize)
+        self.ID = np.random.randint(0, high=2**31)
 
         if self.verbose:
             print("===== HYPERPARAMETERS =====")
