@@ -151,9 +151,11 @@ class ConformalizedES:
                     val_acc = self.get_acc(inputs, targets)
                     total_val_acc += val_acc
 
-            avg_val_loss = total_val_loss / len(self.val_loader)
+            # avg_val_loss = total_val_loss / len(self.val_loader)
+            avg_val_loss = total_val_loss / (len(targets) * len(self.val_loader))
             self.val_loss_history.append(avg_val_loss)
             self.total_val_loss_history.append(total_val_loss)
+            
 
             if self.acc:
                 avg_val_acc = 100 * (total_val_acc / len(self.val_loader))
@@ -408,14 +410,22 @@ class CES_regression(ConformalizedES):
             curr_y = curr_intersect['intersect']
             # model indices of the intersection
             model_idx_i = curr_intersect['mod1']
+            model_idx_j = curr_intersect['mod2']
             # loss value at the intersection
             curr_value = curr_intersect['intersect_loss']
+            # To best reduce the effect from rounding error, the intersection point is only compared to other parabolas not the themselves
+            loss_param_woself = [v for i,v in enumerate(loss_params) if i not in [model_idx_i, model_idx_j]]
             # compute all possible loss values using all models
-            all_values_at_y = [self.reg_loss(curr_y, param[0], param[1]) for param in loss_params]
-
+            all_values_at_y = [self.reg_loss(curr_y, param[0], param[1]) for param in loss_param_woself]            
+            if curr_value - min(all_values_at_y) < 0:
+              knots.append(curr_intersect)
+                          
+            # Previously, compute all possible loss values using all models. Note that in a very rare case when two parabolas are almost identical, 
+            # this method may miss selecting their intersection point as change point for lower envelope because of numerical rounding error 
+            # all_values_at_y = [self.reg_loss(curr_y, param[0], param[1]) for param in loss_params]
             # compare loss value at intersection with all other possible loss values
-            if np.abs(curr_value - min(all_values_at_y))/np.abs(curr_value) <= eps:
-                knots.append(curr_intersect)
+            # if np.abs(curr_value - min(all_values_at_y))/np.abs(curr_value) <= eps:
+            #     knots.append(curr_intersect)
 
         return knots
 
