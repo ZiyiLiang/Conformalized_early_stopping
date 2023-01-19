@@ -6,9 +6,15 @@ LR_LIST=(0.1 0.01)
 EPOCH_LIST=(100 200)
 SEED_LIST=$(seq 1 25)
 
+# test job
+#N_DATA_LIST=(200)
+#LR_LIST=(0.1)
+#EPOCH_LIST=(10)
+#SEED_LIST=$(seq 1 2) 
+
 
 # Slurm parameters
-MEMO=3G                             # Memory required (3 GB)
+MEMO=12G                             # Memory required (12 GB)
 TIME=00-01:00:00                    # Time required (60 m)
 CORE=1                              # Cores required (1)
 
@@ -16,20 +22,18 @@ CORE=1                              # Cores required (1)
 ORDP="sbatch --mem="$MEMO" --nodes=1 --ntasks=1 --cpus-per-task=1 --time="$TIME
 
 # Create directory for log files
-LOGS="logs"
+LOGS="logs/oneclass"
 mkdir -p $LOGS
-mkdir -p $LOGS"/oc"
 
-OUT_DIR="results"
+OUT_DIR="results/oneclass"
 mkdir -p $OUT_DIR
-mkdir -p $OUT_DIR"/oc"
 
 # Loop over configurations and chromosomes
 for SEED in $SEED_LIST; do
   for N_DATA in "${N_DATA_LIST[@]}"; do
     for LR in "${LR_LIST[@]}"; do
       for EPOCH in "${EPOCH_LIST[@]}"; do
-        JOBN="oc/""_ndata"$N_CAL"_lr"$LR"_epoch"$EPOCH"_seed"$SEED
+        JOBN="ndata"$N_DATA"_lr"$LR"_epoch"$EPOCH"_seed"$SEED
         OUT_FILE=$OUT_DIR"/"$JOBN".txt"
         COMPLETE=0
         #ls $OUT_FILE

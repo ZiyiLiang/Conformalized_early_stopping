@@ -3,6 +3,7 @@ import sys, os
 import pandas as pd
 import torch as th
 import torch.optim as optim
+import shutil
 from torchvision import transforms
 from torchvision import datasets
 
@@ -29,7 +30,7 @@ if True: # Input parameters
     # Parse input arguments
     print ('Number of arguments:', len(sys.argv), 'arguments.')
     print ('Argument List:', str(sys.argv))
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 5:
         print("Error: incorrect number of parameters.")
         quit()
 
@@ -57,19 +58,21 @@ alpha_list = [0.1]
 ###############
 # Output file #
 ###############
-outdir = "results/oneclass"
+outdir = "results/oneclass/"
 os.makedirs(outdir, exist_ok=True)
-outfile_prefix = outdir + "/" + "ndata"+str(n_data) + "_lr" + str(lr) + "_epoch" + str(n_epoch) +\
-                 + "_seed" + str(seed)
-outfile = outfile_prefix + ".txt"
+outfile_name = "ndata"+str(n_data) + "_lr" + str(lr) + "_epoch" + str(n_epoch) +\
+                 "_seed" + str(seed)
+outfile = outdir + outfile_name + ".txt"
 print("Output file: {:s}".format(outfile), end="\n")
+
+modeldir = "models/oneClass/"+outfile_name+"/"
 
 # Header for results file
 def add_header(df):
     df["n_epoch"] = n_epoch
     df["n_data"] = n_data
     df["seed"] = seed
-    df["lr"] == lr
+    df["lr"] = lr
     df["batch_size"] = batch_size
     return df
 
@@ -209,7 +212,7 @@ CES_oc_bm = CES_oneClass(net_bm, device, train_loader_bm, batch_size=batch_size,
                         learning_rate=lr, val_loader=es_loader_bm, criterion=criterion,optimizer=optimizer_bm)
 
 # Train the model and save snapshots regularly
-CES_oc_bm.full_train(save_dir = './models/oneClass/benchmarks', save_every = save_every)
+CES_oc_bm.full_train(save_dir = modeldir+'benchmarks', save_every = save_every)
 
 
 #------------ Training with without data splitting ------------------#
@@ -225,7 +228,7 @@ CES_oc_ces = CES_oneClass(net_ces, device, train_loader_ces, batch_size=batch_si
                         learning_rate=lr, val_loader=escal_loader_ces, criterion=criterion,optimizer=optimizer_ces)
 
 # Train the model and save snapshots regularly
-CES_oc_ces.full_train(save_dir = './models/oneClass/ces', save_every = save_every)
+CES_oc_ces.full_train(save_dir = modeldir+'ces', save_every = save_every)
 
 
 
@@ -235,9 +238,8 @@ CES_oc_ces.full_train(save_dir = './models/oneClass/ces', save_every = save_ever
 
 # Initialize result data frame
 results = pd.DataFrame({})
-
 #------------ Data splitting method ------------------#
-print('Computing data splitting benchmark p-values for {:d} test points...'.format(n_test))
+print('Computing data splitting benchmark p-values for {:d} test points...'.format(n_test_samples))
 sys.stdout.flush()
 
 best_loss_bm, best_model_bm, test_val_loss_history_bm = CES_oc_bm.select_model()
@@ -251,7 +253,7 @@ results = pd.concat([results, results_bm])
 
 
 #------------ Naive method + Theory ------------------#
-print('Computing naive benchmark p-values for {:d} test points...'.format(n_test))
+print('Computing naive benchmark p-values for {:d} test points...'.format(n_test_samples))
 sys.stdout.flush()
 
 model_list_ces = CES_oc_ces.model_list
@@ -264,7 +266,7 @@ T=len(model_list_ces)
 # results with theoretical correction
 alpha_correct_list = list(map(theory.inv_hybrid, [T]*len(alpha_list), \
                               [n_escal_ces]*len(alpha_list), alpha_list))
-alpha_2 = np.clip(alpha_correct_list, 1.0/n_escal_ces, 1)
+alpha_correct_list = np.clip(alpha_correct_list, 1.0/n_escal_ces, 1)
 results_theory = eval_pvalues(pvals_naive, labels, alpha_correct_list)
 results_theory["Method"] = "Theory"
 results = pd.concat([results, results_theory])
@@ -276,6 +278,7 @@ results = pd.concat([results, results_naive])
 
 
 #------------ Full training ------------------#
+print('Computing full training benchmark p-values for {:d} test points...'.format(n_test_samples))
 full_model = model_list_ces[-1]
 pvals_full = C_PVals_ces.compute_pvals(inputs, [full_model]*len(inputs))
 results_full = eval_pvalues(pvals_full, labels, alpha_list)
@@ -284,6 +287,7 @@ results = pd.concat([results, results_full])
 
 
 #------------ CES ------------------#
+print('Computing CES p-values for {:d} test points...'.format(n_test_samples))
 best_loss_ces, best_model_ces, test_val_loss_history_ces = CES_oc_ces.select_model(inputs)
 pvals_ces = C_PVals_ces.compute_pvals(inputs, best_model_ces)
 results_ces = eval_pvalues(pvals_ces, labels, alpha_list)
@@ -299,3 +303,6 @@ results = add_header(results)
 results.to_csv(outfile, index=False)
 print("\nResults written to {:s}\n".format(outfile))
 sys.stdout.flush()
+
+# Clean up temp model directory to free up disk space
+shutil.rmtree(modeldir, ignore_errors=True)

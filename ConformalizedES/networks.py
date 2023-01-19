@@ -151,6 +151,8 @@ class ConvAutoencoder(nn.Module):
         """
         Compute the anomaly scores for a given set of inputs as the rescontruction error
         """
+        if len(inputs.shape) ==3:
+            inputs = inputs[None]
 
         self.eval()
         with th.no_grad():

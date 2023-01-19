@@ -1,4 +1,6 @@
-module load python/3.7.6
-ml gcc/8.3.0
+#!/bin/bash
+
+eval "$(conda shell.bash hook)"
+conda activate py37
 
 python3 exp_oc.py $1 $2 $3 $4
