@@ -2,7 +2,7 @@ import numpy as np
 import sys, os
 import pandas as pd
 import torch as th
-
+import shutil
 
 sys.path.append("../ConformalizedES")
 sys.path.append("../synthetic_experiment")
@@ -57,23 +57,25 @@ batch_size = 10
 n_test = 1000
 alpha_list = [0.1]
 n_classes = 2
-num_repetitions = 2
+num_repetitions = 200
 
 
 ###############
 # Output file #
 ###############
-outdir = "results/naive"
-# os.makedirs(outdir, exist_ok=True)
-outfile_prefix = outdir + "/" + "ncal"+str(n_cal) + "_lr" + str(lr) + "_epoch" + str(n_epoch) +\
+outdir = "results/naive/"
+os.makedirs(outdir, exist_ok=True)
+outfile_name = "ncal"+str(n_cal) + "_lr" + str(lr) + "_epoch" + str(n_epoch) +\
                  "_optim" + str(optimizer) + "_seed" + str(random_state) + "_std" + str(std) + "_nfeature" + str(n_features)
-outfile = outfile_prefix + ".txt"
+outfile = outdir + outfile_name + ".txt"
 print("Output file: {:s}".format(outfile), end="\n")
+
+tmpdir = "models/oneClass/"+outfile_name+"/"
 
 # Header for results file
 def add_header(df):
     df["n_epoch"] = n_epoch
-    df["n_calib"] = n_cals
+    df["n_calib"] = n_cal
     df["seed"] = random_state
     return df
     
@@ -92,10 +94,13 @@ null_center =  np.array([[0,0]])
 # Run experiments #
 ###################
 
-def run_experiment(seed, train_set, n_train, val_set, n_val, n_cal, test_set, n_test,
+def run_experiment(random_state, r, train_set, n_train, val_set, n_val, n_cal, test_set, n_test,
                    lr, n_epoch, alpha_list, batch_size=10, num_worker=0, visualize=False):
     # Initialize result data frame
     results = pd.DataFrame({})
+    
+    # Change random seed for this repetition
+    seed = 10*random_state*num_repetitions + r
     
     # Get the dataloaders and test points
     train_loader_bm, train_loader_ces = load_train(seed, train_set, n_train, batch_size, num_worker),\
@@ -133,7 +138,7 @@ def run_experiment(seed, train_set, n_train, val_set, n_val, n_cal, test_set, n_
     
     CES_oc_bm = CES_oneClass(net_bm, device, train_loader_bm, batch_size=batch_size, max_epoch=n_epoch, 
                         learning_rate=lr, val_loader=val_loader_bm, criterion=criterion,optimizer=optimizer_bm)
-    CES_oc_bm.full_train(save_dir = './models/oneClass/exp'+str(seed)+'/benchmarks/', save_every = 1)
+    CES_oc_bm.full_train(save_dir = './models/oneClass/'+outfile_name+'/repetition'+str(r)+'/benchmarks/', save_every = 1)
     
     if visualize:
         plot_loss_acc(CES_oc_bm.train_loss_history, CES_oc_bm.val_loss_history, 
@@ -173,7 +178,7 @@ def run_experiment(seed, train_set, n_train, val_set, n_val, n_cal, test_set, n_
     
     CES_oc_ces = CES_oneClass(net_ces, device, train_loader_ces, batch_size=batch_size, max_epoch=n_epoch, 
                             learning_rate=lr, val_loader=val_loader_ces, criterion=criterion,optimizer=optimizer_ces)
-    CES_oc_ces.full_train(save_dir = './models/oneClass/exp'+str(seed)+'/ces/', save_every = 1)
+    CES_oc_ces.full_train(save_dir = './models/oneClass/'+outfile_name+'/repetition'+str(r)+'/ces/', save_every = 1)
     
     if visualize:
         plot_loss_acc(CES_oc_ces.train_loss_history, CES_oc_ces.val_loss_history, 
@@ -212,7 +217,7 @@ for r in range(num_repetitions):
     train_set = Blob_dataset(5000, centers, n_features, std, random_state= seed)
     val_set =  Blob_dataset(5000, null_center, n_features, std, random_state=seed)
     test_set = Blob_dataset(5000, centers, n_features, std, random_state=seed)
-    results_new = run_experiment(seed, train_set, n_train, val_set, n_val, n_cal, 
+    results_new = run_experiment(random_state, r, train_set, n_train, val_set, n_val, n_cal, 
                                  test_set, n_test, lr, n_epoch, alpha_list, batch_size)
     results_new = add_header(results_new)
     results_new["Repetition"] = r
@@ -221,6 +226,9 @@ for r in range(num_repetitions):
     results.to_csv(outfile, index=False)
     print("\nResults written to {:s}\n".format(outfile))
     sys.stdout.flush()
+
+# Clean up temp model directory to free up disk space
+shutil.rmtree(tmpdir, ignore_errors=True)
 
 print("\nAll experiments completed.\n")
 sys.stdout.flush()

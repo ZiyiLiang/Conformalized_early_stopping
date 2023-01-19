@@ -1,4 +1,5 @@
-module load python/3.7.6
-ml gcc/8.3.0
+#!/bin/bash
 
-python3 experiment_naive.py $1 $2 $3 $4 $5 $6 $7
+eval "$(conda shell.bash hook)"
+conda activate py37
+python $HOME/CES/Conformalized_early_stopping/synthetic_experiment/experiment_naive.py $1 $2 $3 $4 $5 $6 $7
