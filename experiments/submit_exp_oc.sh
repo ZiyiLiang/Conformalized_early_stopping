@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Parameters
-N_DATA_LIST=(200 300 400 500)
-LR_LIST=(0.1 0.01)
-EPOCH_LIST=(100 200)
-SEED_LIST=$(seq 1 25)
+N_DATA_LIST=(100 150 200)
+LR_LIST=(0.01)
+EPOCH_LIST=(100)
+SEED_LIST=$(seq 1 200)
 
 # test job
 #N_DATA_LIST=(200)
@@ -15,7 +15,7 @@ SEED_LIST=$(seq 1 25)
 
 # Slurm parameters
 MEMO=12G                             # Memory required (12 GB)
-TIME=00-01:00:00                    # Time required (60 m)
+TIME=00-00:30:00                    # Time required (60 m)
 CORE=1                              # Cores required (1)
 
 # Assemble order prefix
