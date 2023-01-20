@@ -74,9 +74,10 @@ class Conformal_PSet:
                 p_hat_batch = self.net.predict_prob(inputs)
                 p_hat_cal.append(p_hat_batch)
                 cal_labels.append(labels)
-                        
+                       
             cal_labels = th.cat(cal_labels)
             p_hat_cal = np.concatenate(p_hat_cal)
+
             
             # Use all calibration data to calibrate for the marginal case
             alpha_calibrated[model_idx] = self._calibrate_alpha_single(p_hat_cal, cal_labels)
@@ -86,7 +87,7 @@ class Conformal_PSet:
                 for label in range(self.n_classes):
                     idx = cal_labels == label
                     alpha_calibrated_lc[model_idx][label] = self._calibrate_alpha_single(p_hat_cal[idx], cal_labels[idx])
-
+            
         self.alpha_calibrated = alpha_calibrated
         self.alpha_calibrated_lc = alpha_calibrated_lc
 
@@ -112,9 +113,10 @@ class Conformal_PSet:
         else:
             iterator = range(n_test)
 
-        pred_sets = []
+        pred_sets= []
         for i in iterator:
-            pred_sets.append(self._pred_set_single(test_inputs[i][None], i, best_model[i], marginal))
+            pset = self._pred_set_single(test_inputs[i][None], i, best_model[i], marginal)
+            pred_sets.append(pset)
         if True:
             print("Finished computing {} prediction sets for {} test points.".format(['label conditional', 'marginal'][marginal], n_test))
             sys.stdout.flush()
@@ -140,7 +142,7 @@ class Conformal_PSet:
 
             p_hat_test = self.net.predict_prob(test_input.to(self.device))
 
-            rng = np.random.default_rng(self.random_state + test_idx + label*10000)
+            rng = np.random.default_rng(min(self.random_state*100000 + test_idx + label*10000, sys.maxsize))
             epsilon = rng.uniform(low=0.0, high=1.0, size=1)
 
             grey_box = ProbAccum(p_hat_test)
@@ -149,8 +151,10 @@ class Conformal_PSet:
                         self.alpha_calibrated_lc[model_idx][label]
             S_hat = grey_box.predict_sets(alpha_new, epsilon=epsilon)
             
+            
             if label in S_hat[0]:
-                pred_set.append(label) 
+                pred_set.append(label)
+        
         return pred_set
 
 

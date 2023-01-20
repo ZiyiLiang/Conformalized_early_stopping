@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats.mstats import mquantiles
+import pdb
 
 class ProbabilityAccumulator:
     def __init__(self, prob):
@@ -13,7 +14,9 @@ class ProbabilityAccumulator:
         self.Z = np.round(self.prob_sort.cumsum(axis=1),9)        
         
     def predict_sets(self, alpha, epsilon=None, allow_empty=True):
-        L = np.argmax(self.Z >= 1.0-alpha, axis=1).flatten()
+        # L = np.argmax(self.Z >= 1.0-alpha, axis=1).flatten()
+        L=[np.argmax(z >= 1.0-alpha) if sum(z >= 1.0-alpha) else len(z)-1 for z in self.Z]
+
         if epsilon is not None:
             Z_excess = np.array([ self.Z[i, L[i]] for i in range(self.n) ]) - (1.0-alpha)
             p_remove = Z_excess / np.array([ self.prob_sort[i, L[i]] for i in range(self.n) ])
