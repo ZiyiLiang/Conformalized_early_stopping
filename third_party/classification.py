@@ -15,11 +15,13 @@ class ProbabilityAccumulator:
         
     def predict_sets(self, alpha, epsilon=None, allow_empty=True):
         # L = np.argmax(self.Z >= 1.0-alpha, axis=1).flatten()
-        L=[np.argmax(z >= 1.0-alpha) if sum(z >= 1.0-alpha) else len(z)-1 for z in self.Z]
+        L=[np.argmax(z >= 1.0-alpha) if sum(z >= 1.0-alpha) and alpha>0
+                                     else len(z)-1 for z in self.Z]
 
         if epsilon is not None:
             Z_excess = np.array([ self.Z[i, L[i]] for i in range(self.n) ]) - (1.0-alpha)
             p_remove = Z_excess / np.array([ self.prob_sort[i, L[i]] for i in range(self.n) ])
+
             remove = epsilon <= p_remove
             for i in np.where(remove)[0]:
                 if not allow_empty:
