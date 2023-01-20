@@ -204,7 +204,7 @@ class Conformal_PVals:
     
 
 
-    def _compute_pval_single(self, test_input, best_model):
+    def _compute_pval_single(self, test_input, best_model, left_tail):
         '''
         Calculate the conformal p-value for a single test point 
         '''
@@ -219,10 +219,13 @@ class Conformal_PVals:
         cal_scores = self.cal_scores[model_idx]
         n_cal = len(cal_scores)
 
-        pval = (1.0 + np.sum(np.array(cal_scores) > np.array(test_score))) / (1.0 + n_cal)
+        if left_tail:
+            pval = (1.0 + np.sum(np.array(cal_scores) <= np.array(test_score))) / (1.0 + n_cal)
+        else:
+            pval = (1.0 + np.sum(np.array(cal_scores) >= np.array(test_score))) / (1.0 + n_cal)
         return pval
 
-    def compute_pvals(self, test_inputs, best_model):
+    def compute_pvals(self, test_inputs, best_model, left_tail = False):
         """ Compute the conformal p-values for test points using a calibration set
         """
         n_test = len(test_inputs)
@@ -237,7 +240,7 @@ class Conformal_PVals:
 
         pvals = -np.zeros(n_test)
         for i in iterator:
-            pvals[i] = self._compute_pval_single(test_inputs[i], best_model[i])
+            pvals[i] = self._compute_pval_single(test_inputs[i], best_model[i], left_tail)
 
         if self.verbose:
             print("Finished computing p-values for {} test points.".format(n_test))

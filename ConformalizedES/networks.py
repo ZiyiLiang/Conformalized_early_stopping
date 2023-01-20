@@ -50,7 +50,20 @@ class SimpleConvolutionalNetwork(nn.Module):
             logits = self(inputs)    # Assume inputs are already on the correct device
             prob = get_prob(logits).cpu().numpy()
         return prob
-
+    
+    def get_anomaly_scores(self, inputs):
+        """
+        Predict probabilities of being an outlier, inlier label is 3
+        """
+        self.eval()
+        if len(inputs.shape) ==3:
+            inputs = inputs[None]
+            
+        get_prob = nn.Softmax(dim = 1)
+        with th.no_grad():
+            logits = self(inputs)    # Assume inputs are already on the correct device
+            prob = get_prob(logits).cpu().numpy()
+        return list(1-prob[:,3])
 
 
 class ConvAutoencoder_32(nn.Module):
