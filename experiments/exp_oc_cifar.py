@@ -198,7 +198,7 @@ test_loader = DataLoader(PrepareData(X_test, Y_test, transform), batch_size= n_t
 # get all test images
 dataiter = iter(test_loader)
 inputs, labels = dataiter.next()
-
+is_outlier = labels!=3
 
 
 ################
@@ -226,7 +226,7 @@ optimizer_bm = optim.Adam(net_bm.parameters(), lr=lr)
 CES_mc_bm = CES_multiClass(net_bm, device, train_loader_bm, n_classes=n_classes, batch_size=batch_size, max_epoch=n_epoch, 
                         learning_rate=lr, val_loader=es_loader_bm, criterion=criterion,optimizer=optimizer_bm)
 
-CES_mc_bm.full_train(save_dir = './models/out/benchmarks', save_every = save_every)
+CES_mc_bm.full_train(save_dir = modeldir+'benchmarks', save_every = save_every)
 
 
 #------------ Training with without data splitting ------------------#
@@ -241,7 +241,7 @@ optimizer_ces = optim.Adam(net_ces.parameters(), lr=lr)
 CES_mc_ces = CES_multiClass(net_ces, device, train_loader_ces, n_classes=n_classes, batch_size=batch_size, max_epoch=n_epoch, 
                         learning_rate=lr, val_loader=escal_loader_ces, criterion=criterion,optimizer=optimizer_ces)
 
-CES_mc_ces.full_train(save_dir = './models/out/ces', save_every = save_every)
+CES_mc_ces.full_train(save_dir = modeldir+'ces', save_every = save_every)
 
 
 
@@ -260,7 +260,7 @@ model_list_bm = CES_mc_bm.model_list
 C_PVals_bm = Conformal_PVals(net_bm, device, calib_loader_bm, model_list_bm, random_state = seed)
 
 pvals_bm = C_PVals_bm.compute_pvals(inputs, [best_model_bm]*len(inputs))
-results_bm = eval_pvalues(pvals_bm, labels, alpha_list)
+results_bm = eval_pvalues(pvals_bm, is_outlier, alpha_list)
 results_bm["Method"] = "Data Splitting"
 results_bm["Alpha"] = alpha_list[0]
 results = pd.concat([results, results_bm])
@@ -282,13 +282,13 @@ alpha_correct_list = list(map(theory.inv_hybrid, [T]*len(alpha_list), \
                               [n_escal_ces]*len(alpha_list), alpha_list))
 unclipped_alpha = alpha_correct_list
 alpha_correct_list = np.clip(alpha_correct_list, 1.0/n_escal_ces, 1)
-results_theory = eval_pvalues(pvals_naive, labels, alpha_correct_list)
+results_theory = eval_pvalues(pvals_naive, is_outlier, alpha_correct_list)
 results_theory["Method"] = "Theory"
-results_theory["Alpha"] = [unclipped_alpha[0],alpha_correct_list[0]]
+results_theory["Alpha"] = [[unclipped_alpha[0],alpha_correct_list[0]]]
 results = pd.concat([results, results_theory])
 
 # results without theoretical correction
-results_naive = eval_pvalues(pvals_naive, labels, alpha_list)
+results_naive = eval_pvalues(pvals_naive, is_outlier, alpha_list)
 results_naive["Method"] = "Naive"
 results_naive["Alpha"] = alpha_list[0]
 results = pd.concat([results, results_naive])
@@ -298,7 +298,7 @@ results = pd.concat([results, results_naive])
 print('Computing full training benchmark p-values for {:d} test points...'.format(n_test_samples))
 full_model = model_list_ces[-1]
 pvals_full = C_PVals_ces.compute_pvals(inputs, [full_model]*len(inputs))
-results_full = eval_pvalues(pvals_full, labels, alpha_list)
+results_full = eval_pvalues(pvals_full, is_outlier, alpha_list)
 results_full["Method"] = "Full Training"
 results_full["Alpha"] = alpha_list[0]
 results = pd.concat([results, results_full])
@@ -307,8 +307,9 @@ results = pd.concat([results, results_full])
 #------------ CES ------------------#
 print('Computing CES p-values for {:d} test points...'.format(n_test_samples))
 best_loss_ces, best_model_ces, test_val_loss_history_ces = CES_mc_ces.select_model(inputs)
+best_model_ces = list(np.array(best_model_ces)[:,3])
 pvals_ces = C_PVals_ces.compute_pvals(inputs, best_model_ces)
-results_ces = eval_pvalues(pvals_ces, labels, alpha_list)
+results_ces = eval_pvalues(pvals_ces, is_outlier, alpha_list)
 results_ces["Method"] = "CES"
 results_ces["Alpha"] = alpha_list[0]
 results = pd.concat([results, results_ces])
