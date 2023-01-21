@@ -2,9 +2,9 @@
 
 # Parameters
 N_DATA_LIST=(200 500 1000 2000)
-LR_LIST=(0.01 0.001)
-EPOCH_LIST=(100)
-SEED_LIST=$(seq 1 100)
+LR_LIST=(0.01)
+EPOCH_LIST=(50)
+SEED_LIST=$(seq 1 200)
 
 
 # test job
@@ -23,10 +23,10 @@ CORE=1                              # Cores required (1)
 ORDP="sbatch --mem="$MEMO" --nodes=1 --ntasks=1 --cpus-per-task=1 --time="$TIME
 
 # Create directory for log files
-LOGS="logs/oneclass"
+LOGS="logs/outlierDetect"
 mkdir -p $LOGS
 
-OUT_DIR="results/oneclass"
+OUT_DIR="results/outlierDetect"
 mkdir -p $OUT_DIR
 
 # Loop over configurations and chromosomes
