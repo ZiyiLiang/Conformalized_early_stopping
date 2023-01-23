@@ -15,7 +15,7 @@ results.raw <- do.call("rbind", lapply(ifile.list, function(ifile) {
 }))
 
 key.values <- c("marg_coverage", "cond_coverage", "avg_size")
-key.labels <- c("Coverage (marginal)", "Coverage (WCS)", "Width")
+key.labels <- c("Coverage (marginal)", "Coverage (conditional)", "Width")
 
 method.values <- c("ces", "naive", "theory", "benchmark", "naive-full")
 method.labels <- c("CES", "Naive", "Naive + theory", "Data splitting", "Full training")
@@ -31,8 +31,8 @@ results <- results.raw %>%
     group_by(data, Method, n, n_features, n_test, noise, lr, wd, alpha, alpha_2, optimizer, Key) %>%
     summarise(num=n(), Value.se = sd(Value, na.rm=T)/sqrt(n()), Value=mean(Value, na.rm=T)) %>%
     mutate(Value.low = Value - 2*Value.se, Value.upp = Value + 2*Value.se) %>%
-    mutate(Value.upp = ifelse((Key=="Coverage (WCS)")*(Value.upp>1)==1, 1, Value.upp)) %>%
-    mutate(Value.low = ifelse((Key=="Coverage (WCS)")*(Value.low<0)==1, 0, Value.low)) %>%
+    mutate(Value.upp = ifelse((Key=="Coverage (conditional)")*(Value.upp>1)==1, 1, Value.upp)) %>%
+    mutate(Value.low = ifelse((Key=="Coverage (conditional)")*(Value.low<0)==1, 0, Value.low)) %>%
     mutate(Value.upp = ifelse((Key=="Coverage (marginal)")*(Value.upp>1)==1, 1, Value.upp)) %>%
     mutate(Value.low = ifelse((Key=="Coverage (marginal)")*(Value.low<0)==1, 0, Value.low)) %>%
     filter(Method!="Naive")
@@ -56,7 +56,7 @@ make_plot <- function(plot.data, xmax=2000) {
         geom_point(alpha=0.75) +
         geom_line() +
         ##    geom_errorbar(aes(ymin=Value.low, ymax=Value.upp)) +
-        geom_hline(data=df.nominal, aes(yintercept=Value)) +
+        geom_hline(data=df.nominal, aes(yintercept=Value), linetype=2) +
         geom_point(data=df.ghost, aes(x=100,y=Value), alpha=0) +
         scale_color_manual(values=color.scale) +
         scale_shape_manual(values=shape.scale) +
@@ -72,6 +72,39 @@ make_plot("bio")
 make_plot("bike")
 make_plot("concrete", xmax=1000)
 
+## Make nice plots for paper
+make_plot_small <- function(plot.data, xmax=2000) {
+    plot.alpha <- 0.1
+    plot.noise <- 0.01
+    plot.lr <- 0.001
+    plot.wd <- 0
+    df.nominal <- tibble(Key=c("marg_coverage","cond_coverage"), Value=1-plot.alpha) %>%
+        mutate(Key = factor(Key, key.values, key.labels))    
+    df.ghost <- tibble(Key=c("marg_coverage","cond_coverage","marg_coverage","cond_coverage"), Value=c(0.7,0.7,1,1), method="ces") %>%
+        mutate(Method = factor(method, method.values, method.labels)) %>%
+        mutate(Key = factor(Key, key.values, key.labels))    
+    pp <- results %>%
+        filter(Method != "NA") %>%
+        filter(noise==plot.noise, data==plot.data, alpha==plot.alpha, lr==plot.lr, wd==plot.wd) %>%
+        ggplot(aes(x=n, y=Value, color=Method, shape=Method)) +
+        geom_point(alpha=0.75) +
+        geom_line() +
+        ##    geom_errorbar(aes(ymin=Value.low, ymax=Value.upp)) +
+        geom_hline(data=df.nominal, aes(yintercept=Value), linetype=2) +
+        geom_point(data=df.ghost, aes(x=100,y=Value), alpha=0) +
+        scale_color_manual(values=color.scale) +
+        scale_shape_manual(values=shape.scale) +
+        facet_wrap(.~Key, scales="free") +
+        scale_x_continuous(trans='log10', lim=c(200,xmax), breaks=c(200,500,1000,2000)) +
+                                        #        scale_y_continuous(trans='log10') +
+        xlab("Sample size") +
+        ylab("") +
+        theme_bw() +
+        theme(legend.position="bottom", legend.margin=margin(l=-0.1, t = -0.1, unit='cm'), plot.margin=grid::unit(c(0,0.25,0,-0.25), "cm"))
+    ggsave(sprintf("%s/exp_regression_%s_small.pdf", fig.dir, plot.data), pp, width=5, height=2.25)
+}
+make_plot_small("bio")
+
 
 
 ## Make nice tables for paper
@@ -85,7 +118,7 @@ make_table <- function(plot.data, xmax=2000) {
         filter(data==plot.data, noise==plot.noise, alpha==plot.alpha, lr==plot.lr, wd==plot.wd) %>%
         mutate(Value.str = sprintf("%.3f (%.3f)", Value, Value.se)) %>%
         mutate(Value.str=ifelse((Key=="Coverage (marginal)")*(Value<0.85)==1, sprintf("\\textcolor{red}{%s}", Value.str), Value.str)) %>%
-        mutate(Value.str=ifelse((Key=="Coverage (WCS)")*(Value<0.85)==1, sprintf("\\textcolor{red}{%s}", Value.str), Value.str)) %>%
+        mutate(Value.str=ifelse((Key=="Coverage (conditional)")*(Value<0.85)==1, sprintf("\\textcolor{red}{%s}", Value.str), Value.str)) %>%
         mutate(Data=data) %>%
         group_by(Data, n, Key) %>%
         mutate(Value.best = min(Value)) %>%
@@ -97,7 +130,7 @@ make_table <- function(plot.data, xmax=2000) {
         select(n, Data, Method, Width, everything())
     tb1 <- df %>%
         kbl("latex", booktabs=TRUE, longtable = TRUE, escape = FALSE, caption = NA,
-                    col.names = c("Sample size", "Data", "Method", "Width", "Marginal", "WCS")) %>%
+                    col.names = c("Sample size", "Data", "Method", "Width", "Marginal", "Conditional")) %>%
         add_header_above(c(" " = 4, "Coverage" = 2)) %>%
         pack_rows(index = table(df$n))
         

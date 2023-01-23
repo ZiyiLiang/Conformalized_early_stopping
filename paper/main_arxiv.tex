@@ -1,0 +1,68 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{multicol}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage[
+    backend=biber,
+    style=numeric-comp,
+    sortcites,
+    sorting=none,
+    giveninits=true,
+    natbib,
+    hyperref=false,
+    maxbibnames=99,
+    doi=false,isbn=false,url=false,eprint=false
+]{biblatex}
+
+\addbibresource{ref.bib}
+
+\title{Conformal inference is (almost) free for neural networks\\trained with early stopping}
+
+\input{header.tex}
+
+\usepackage[dvipsnames]{xcolor}
+\usepackage{subcaption}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\newtheorem{proposition}{Proposition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{lemma}{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem*{remark}{Remark}
+
+\usepackage[colorinlistoftodos]{todonotes}
+\newcommand{\todomatteo}[2][1=]{\todo[linecolor=orange,backgroundcolor=orange!25,bordercolor=orange,#1]{{\begin{spacing}{1}\tiny For Matteo: #2\end{spacing}}}}
+\newcommand{\todocora}[2][1=]{\todo[linecolor=blue,backgroundcolor=blue!25,bordercolor=blue,#1]{\begin{spacing}{1}\tiny For Cora: #2\end{spacing}}}
+\newcommand{\todoyanfei}[2][1=]{\todo[linecolor=green,backgroundcolor=green!25,bordercolor=green,#1]{{\begin{spacing}{1}\tiny For Yanfei: #2\end{spacing}}}}
+
+\usepackage{algpseudocode}
+\usepackage{algorithm, algorithmic}
+
+
+\author{Ziyi Liang\thanks{Department of Mathematics, University of Southern California, Los Angeles, CA, USA.}, Yanfei Zhou\thanks{Department of Data Sciences and Operations, University of Southern California, Los Angeles, CA, USA.},
+Matteo Sesia\footnotemark[2]}
+
+\begin{document}
+
+\maketitle
+
+\input{body.tex}
+                 
+\printbibliography                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
+\newpage
+
+\input{appendix.tex}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

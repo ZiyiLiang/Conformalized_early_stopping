@@ -1,0 +1,539 @@
+\appendix
+% Special numbering for appendix (Use "S" instead of "A" in Supplement)
+\renewcommand{\thesection}{A\arabic{section}}
+\renewcommand{\theequation}{A\arabic{equation}}
+\renewcommand{\thetheorem}{A\arabic{theorem}}
+\renewcommand{\thecorollary}{A\arabic{corollary}}
+\renewcommand{\theproposition}{A\arabic{proposition}}
+\renewcommand{\thelemma}{A\arabic{lemma}}
+\renewcommand{\thetable}{A\arabic{table}}
+\renewcommand{\thefigure}{A\arabic{figure}}
+\renewcommand{\thealgorithm}{A\arabic{algorithm}}
+
+
+% \setcounter{figure}{0}
+% \setcounter{table}{0}
+% \setcounter{proposition}{0}
+% \setcounter{corollary}{0}
+% \setcounter{theorem}{0}
+% \setcounter{lemma}{0}
+% \setcounter{algorithm}{0}
+
+
+
+\section{Naive early stopping benchmarks} \label{app:naive-benchmarks}
+
+\subsection{Detailed implementation of the naive benchmarks}  \label{app:naive-benchmarks-details}
+
+We detail here the implementation of the naive benchmark considered in this paper, which consist of performing standard conformal calibration using the same hold-out samples utilized by standard early stopping techniques.
+This does not yield theoretically valid conformal inferences in finite samples because greedily utilizing the same hold-out data set twice, both to evaluate the early stopping criterion and to perform conformal calibration, will break the necessary exchangeability with the test point. Nonetheless, this approach can serve as an informative benchmark and it becomes useful in Appendix~\ref{app:reg-noempty} to extend our rigorous conformalized early stopping method for regression problems in such as way as to explicitly avoid returning empty prediction intervals.
+For completeness, we present the implementation of the naive benchmark separately for outlier detection, multi-class classification, and regression, respectively in Algorithms~\ref{alg:naive-one}, \ref{alg:naive-multi} and~\ref{alg:naive-reg}.
+Note that Algorithm~\ref{alg:naive-multi} also allows for the possibility of computing prediction sets seeking (approximate) marginal coverage instead of (approximate) label-conditional coverage for multi-class classification problems; see Appendix~\ref{app:class-marg} for further details on multi-class classification with marginal coverage.
+
+\begin{algorithm}[H]
+    \caption{Naive conformal outlier detection benchmark with greedy early stopping}
+    \label{alg:naive-one}
+    \begin{algorithmic}[1]
+        \STATE \textbf{Input}: Exchangeable data points $Z_1, \ldots, Z_n$; test point $Z_{n+1}$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} One-class classifier trainable via (stochastic) gradient descent.
+        \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
+        \STATE Train the one-class classifier for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
+        \STATE Pick the most promising model $t^* \in [T]$ minimizing $\mathcal{L}_{\text{es-cal}}(M_t)$ in \eqref{eq:loss-ces}, using the data in $\mathcal{D}_{\text{es-cal}}$.
+        \STATE Compute nonconformity scores $\hat{S}_i(Z_{n+1})$ for all $i \in \mathcal{D}_{\text{es-cal}} \cup \{n+1\}$ using model $t^*$.
+        \STATE \textbf{Output}: Naive conformal p-value $\hat{u}_0^{\textup{naive}}(Z_{n+1})$ given by \eqref{eq:conformal_pval}.
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+    \caption{Naive conformal multi-class classification benchmark with greedy early stopping}
+    \label{alg:naive-multi}
+    \begin{algorithmic}[1]
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with labels $Y_i \in [K]$.
+        \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} $K$-class classifier trainable via (stochastic) gradient descent.
+        \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
+        \STATE Train the $K$-class classifier for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
+        \STATE Pick the most promising model $t^* \in [T]$ minimizing $\mathcal{L}_{\text{es-cal}}(M_t)$ in \eqref{eq:loss-ces-class}, using the data in $\mathcal{D}_{\text{es-cal}}$.
+        \FOR{$ y \in [K]$}
+        \IF{Label-conditional coverage is desired}
+        \STATE Define $\mathcal{D}^y_{\text{es-cal}} = \{i \in \mathcal{D}_{\text{es-cal}} : Y_i = y \}$.
+        \STATE Compute scores $\hat{S}_i^y(X_{n+1})$ for all $i \in \mathcal{D}^y_{\text{es-cal}} \cup \{n+1\}$ using model $t^*$; see Appendix~\ref{app:class-scores}.
+        \STATE Compute the naive conformal p-value $\hat{u}^{\textup{naive}}_y(X_{n+1})$ according to \eqref{eq:conformal_pval-class}.
+        \ELSE
+        \STATE Compute scores $\hat{S}_i^y(X_{n+1})$ for all $i \in \mathcal{D}_{\text{es-cal}} \cup \{n+1\}$ using model $t^*$; see Appendix~\ref{app:class-scores}.
+        \STATE Compute the naive conformal p-value $\hat{u}^{\textup{naive}}_y(X_{n+1})$ according to
+        \begin{align*}
+          \hat{u}^{\textup{naive}}_y(X_{n+1}) = \frac{1 + |i \in \mathcal{D}_{\text{es-cal}}: \hat{S}_{i}^y(X_{n+1}) \leq \hat{S}_{n+1}^y(X_{n+1})|}{1+|\mathcal{D}_{\text{es-cal}}|}.
+        \end{align*}
+        \ENDIF
+        \ENDFOR
+
+        \STATE \textbf{Output}: Naive prediction set $\hat{C}^{\textup{naive}}_{\alpha}(X_{n+1})$ given by \eqref{eq:pred-set-class}.
+    \end{algorithmic}
+\end{algorithm}
+
+
+\begin{algorithm}[H]
+    \caption{Naive conformal regression benchmark with greedy early stopping}
+    \label{alg:naive-reg}
+    \begin{algorithmic}[1]
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with outcomes $Y_i \in \mathbb{R}$.
+        \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} Regression model trainable via (stochastic) gradient descent.
+        \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
+        \STATE Train the regression model for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
+        \STATE Pick the most promising model $t^* \in [T]$ minimizing $\mathcal{L}_{\text{es-cal}}(M_t)$ in \eqref{eq:loss-ces-reg}.
+        \STATE Evaluate nonconformity scores $\hat{S}_i(X_{n+1}) = | Y_i - \hat{\mu}_{t^*}(X_{i})|$ for all $i \in \mathcal{D}_{\text{es-cal}}$.
+        \STATE Compute $\hat{Q}_{1-\alpha}(X_{n+1}) = \lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil\text{-th largest value in }
+        \hat{S}_i(X_{n+1})$ for $i \in \mathcal{D}_{\text{es-cal}}$.
+        \STATE \textbf{Output}: Naive prediction interval $\hat{C}^{\text{naive}}_{\alpha}(X_{n+1}) = \hat{\mu}_{t^*}(X_{n+1}) \pm \hat{Q}_{1-\alpha}(X_{n+1})$.
+    \end{algorithmic}
+\end{algorithm}
+
+
+\subsection{Theoretical analysis of the naive benchmark} \label{app:naive-analysis}
+
+Although the naive benchmarks described above often perform similarly to CES in practice, they do not enjoy the same desirable theoretical guarantees.
+Nonetheless, we can study their behaviour in sufficient detail as to prove that their inferences are too far from being valid.
+Unfortunately, as demonstrated in Section~\ref{sec:numerical_results}, these theoretical results are still not tight enough to be very useful in practice.
+For simplicity, we will begin by focusing on outlier detection.
+
+
+\noindent \textbf{Review of existing results based on the DKW inequality.}
+\citet{efficiency_first_cp} have recently studied the finite-sample coverage rate of a conformal prediction interval formed by naively calibrating a model selected among $T$ possible candidates based on its performance on the calibration data set itself, which we denote by $\mathcal{D}_{\text{es-cal}}$.
+Although \citet{efficiency_first_cp} focus on conformal prediction intervals, here we find it easier to explain their ideas in the context of conformal p-values for outlier detection.
+
+Let $\hat{S}_i(Z_{n+1};t)$, for all $i \in \mathcal{D}_{\text{es-cal}}$ and $t \in [T]$, denote the nonconformity scores corresponding to model $t$, and denote the  $\lfloor \alpha(1+|\mathcal{D}_{\text{es-cal}}|) \rfloor\text{-th largest value in }\hat{S}_i(X_{n+1};t)$ as $\hat{Q}_{\alpha}(Z_{n+1};t)$.
+Let $t^*$  indicate the selected model.
+As we are interested in constructing a conformal p-value $\hat{u}_0^{\textup{naive}}(Z_{n+1})$, the goal is to bound from above the tail probability
+\begin{align}
+    \mathbb{P}\left( \hat{u}_0^{\textup{naive}}(Z_{n+1}) > \alpha \right) = \mathbb{E} \left[  \mathbb{P} \left( \hat{S}_i(X_{n+1};t^*)> \hat{Q}_{\alpha}(Z_{n+1};t^*) \mid \mathcal{D}_{\text{es-cal}}\right) \right].
+\end{align}
+Intuitively, if $n_{\text{es-cal}} = |\mathcal{D}_{\text{es-cal}}|$ is sufficiently large, the conditional probability inside the expected value on the right-hand-side above can be well-approximated by the following empirical quantity:
+\begin{align*}
+    \frac{1}{n}\sum_{i \in \mathcal{D}_{\text{es-cal}}} \mathbbm{1} \left\{ \hat{S}_i(X_{n+1};t^*) > \hat{Q}_{\alpha}(Z_{n+1};t^*) \right \} = \frac{\lceil (1+n_{\text{es-cal}})(1-\alpha) \rceil}{n_{\text{es-cal}}} \geq \left( 1+\frac{1}{n_{\text{es-cal}}}\right)(1-\alpha).
+\end{align*}
+The quality of this approximation in finite samples can be bound by the DKW inequality, which holds for any $\varepsilon \geq 0$:
+\begin{align}
+    \mathbb{P}\left( \sup_{s \in \mathbb{R}} \left| \frac{1}{n_{\text{es-cal}}}\sum_{i \in \mathcal{D}_{\text{es-cal}}} \mathbbm{1} \left\{\hat{S}_i(X_{n+1};t^*) > s \right \} -  \mathbb{P} \left( \hat{S}_i(X_{n+1};t^*)> s \mid \mathcal{D}_{\text{es-cal}}\right)\right| > \varepsilon \right) \leq 2 e^{-2 n_{\text{es-cal}} \varepsilon^2}.
+\end{align}
+Starting from this, Theorem 1 in \citet{efficiency_first_cp} shows that
+\begin{align}
+     \mathbb{P}(\hat{u}_0^{\textup{naive}}(Z_{n+1}) > \alpha) \geq \left(1+\frac{1}{n_{\text{es-cal}}} \right)(1-\alpha)-\frac{\sqrt{\log(2T)/2}+c(T)}{\sqrt{n_{\text{es-cal}}}},
+\end{align}
+where $c(T)$ is a constant that can be computed explicitly and is generally smaller than $1/3$.
+Intuitively, the $[\sqrt{\log(2T)/2}+c(T)]/ \sqrt{n_{\text{es-cal}}}$ term above can be interpreted as the worst-case approximation error among all possible models $t \in [T]$.
+
+One limitation with this result is that is gives a worst-case correction that does not depend on the chosen level $\alpha$, and one would intuitively expect this bound to be tighter for $\alpha = 1/2$ and overly conservative for the small $\alpha$ values (e.g., $\alpha = 0.1$) that are typically interesting in practice. (This intuition will be confirmed empirically in Figure~\ref{fig:bound_alpha}.)
+This observation motivates the following alternative analysis, which can often give tighter results.
+
+
+\noindent \textbf{Alternative probabilistic bound based on Markov's inequality.}
+Define $W_t=\P{\hat{u}_0^{\textup{naive}}(Z_{n+1};t) > \alpha \mid \mathcal{D}_{\text{es-cal}}}$. Lemma~3 in \citet{vovk2012conditional} tells us that $W_t$ follows a Beta distribution, assuming exchangeability among $\mathcal{D}_{\text{es-cal}}$ and the test point. That is,
+\begin{align*}
+    W_t \sim \text{Beta}(n_{\text{es-cal}}+1-l, l), \hspace{10pt} l=\lfloor \alpha(n_{\text{es-cal}}+1) \rfloor.
+\end{align*}
+In the following, we will denote the corresponding inverse Beta cumulative distribution function as $I^{-1}(x;n_{\text{es-cal}}+1-l,l)$.
+This result can be used to derive an alternative upper bound for $\mathbb{P}(\hat{u}_0^{\textup{naive}}(Z_{n+1}) > \alpha)$ using the Markov's inequality.
+
+\begin{proposition}\label{prop:naive-od}
+    Assume $Z_{1}, \ldots, Z_{n}, Z_{n+1}$ are exchangeable random samples, and let $\hat{u}^{\textup{naive}}_0(Z_{n+1})$ be the output of Algorithm~\ref{alg:naive-one}, for any given $\alpha \in (0,1)$. Suppose Algorithm~\ref{alg:naive-one} is based on a learning algorithm that is invariant to permutations of the training data.
+Then, for any fixed $\alpha \in (0,1)$ and any $b>1$, letting $l=\lfloor \alpha(n_{\text{es-cal}}+1)  \rfloor$,
+$$\P{\hat{u}^{\textup{naive}}_0(Z_{n+1}) > \alpha} \geq I^{-1}\left( \frac{1}{bT};n_{\text{es-cal}}+1-l,l \right) \cdot (1-1/b).$$
+\end{proposition}
+
+Note that the bound given by Proposition~\ref{prop:naive-od} depends on $\alpha$ in a more complex way and does not have an explicit analytical form, unlike that of \citet{efficiency_first_cp}. However, this Markov bound is easy to compute numerically and often turns out to be tighter as long as $b$ is moderately large (e.g., $b=100$), as we shall see below.
+Naturally, the same idea can also be applied to bound the coverage of naive conformal prediction sets or intervals output by Algorithm~\ref{alg:naive-multi} or Algorithm~\ref{alg:naive-reg}, respectively.
+
+
+\begin{corollary} \label{prop:naive-class}
+    Assume $(X_1,Y_1), \ldots, (X_n,Y_n), (X_{n+1},Y_{n+1})$ are exchangeable random sample, and let $\hat{C}_{\alpha}^{\textup{naive}}(X_{n+1})$ be the output of Algorithm~\ref{alg:naive-multi}, for any given $\alpha \in (0,1)$. Suppose Algorithm~\ref{alg:naive-multi} is based on a learning algorithm that is invariant to permutations of the training data. Then, for any $b > 1$, letting $l=\lfloor \alpha(n_{\text{es-cal}}+1) \rfloor$, $$\P{Y_{n+1} \in \hat{C}^{\textup{naive}}_{\alpha}(X_{n+1})} \geq I^{-1}\left(\frac{1}{bT}; n_{\text{es-cal}}+1-l,l\right) \cdot (1-1/b).$$
+\end{corollary}
+
+
+\begin{corollary}\label{prop:naive-reg}
+Assume $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ are exchangeable random samples, and let $\hat{C}^{\textup{naive}}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:naive-reg}, for any $\alpha \in (0,1)$. Suppose Algorithm~\ref{alg:naive-reg} is based on a learning algorithm that is invariant to permutations of the training data. Then, for any $b > 1$, letting $l=\lfloor \alpha(n_{\text{es-cal}}+1) \rfloor$,
+$$\P{Y_{n+1} \in \hat{C}^{\textup{naive}}_{\alpha}(X_{n+1})} \geq I^{-1}\left(\frac{1}{bT}; n_{\text{es-cal}}+1-l,l\right) \cdot (1-1/b).$$
+\end{corollary}
+
+
+\noindent \textbf{Hybrid probabilistic bound.}
+Since neither the DKW nor the Markov bound described above always dominate the other for all possible combinations of $T$, $n_{\text{es-cal}}$, and $\alpha$, it makes sense to combine them to obtain a uniformly tighter {\em hybrid} bound.
+For any fixed $b>1$ and any $T$, $n_{\text{es-cal}}$, and $\alpha$, define $H(T,n_{\text{es-cal}},\alpha)$ as
+%Now we compare the DKW bound and Markov bound from the numerical aspect. From Figure~\ref{fig:bound_tn}, we can see that the Markov bound decays slower when the model sizes grows, but the DKW bound performs better when the calibration size $n$ is big enough. This inspires us to combine the two bounds by taking the maximum, formally, we define the new hybrid bound by:
+\begin{align*}
+    H(T,n_{\text{es-cal}},\alpha)
+  = \max\left\{ I^{-1} \left(\frac{1}{bT}; n_{\text{es-cal}}+1-l,l \right) \cdot (1-1/b), \left(1+\frac{1}{n_{\text{es-cal}}}\right)(1-\alpha)-\frac{\sqrt{\log(2T)/2}+c(T)}{\sqrt{n_{\text{es-cal}}}} \right\}.
+\end{align*}
+It then follows immediately from \citet{efficiency_first_cp} and Proposition~\ref{prop:naive-od} that, under the same conditions of Proposition~\ref{prop:naive-od}, for any  fixed $b>1$,
+$$\P{\hat{u}^{\textup{naive}}_0(Z_{n+1}) > \alpha} \geq H(T,n_{\text{es-cal}},\alpha).$$
+Of course, the same argument can also be utilized to tighten the results of Corollaries~\ref{prop:naive-class}--\ref{prop:naive-reg}.
+
+\noindent \textbf{Numerical comparison of different probabilistic bounds.}
+Figure~\ref{fig:bound_tn} compares the three probabilistic bounds described above ({\em DKW}, {\em Markov}, and {\em hybrid}) as a function of the number of candidate models $T$ and of the number of hold-out data points $n_{\text{es-cal}}$, in the case of $\alpha=0.1$. For simplicity, the Markov and hybrid bounds are evaluated by setting $b=100$, which may not be the optimal choice but appears to work reasonably well. These results show that Markov bound tends to be tighter than the DKW bound for large values of $T$ and for small values of $n_{\text{es-cal}}$, while the hybrid bound generally achieves the best of both worlds.
+Lastly, Figure~\ref{fig:bound_alpha} demonstrates that the Markov bound tends to be tighter when $\alpha$ is small. The Markov and hybrid bounds here are also evaluated using $b=100$.
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.63]{diagrams/bound_comparison1.png}
+    \caption{Numerical comparison of different theoretical lower bounds for the marginal coverage of conformal prediction sets computed with a naive early stopping benchmark (e.g., Algorithm~\ref{alg:naive-multi}). Left: lower bounds for the marginal coverage as a function of the number of candidate models $T$, when $\alpha=0.1$ and $n_{\text{es-cal}}=8000$.
+Right: lower bounds for the marginal coverage as a function of the number of hold-out data points, $n_{\text{es-cal}}$, when $\alpha=0.1$ and $T=100$. Higher values correspond to tighter bounds.
+}
+    \label{fig:bound_tn}
+\end{figure}
+
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.63]{diagrams/bound_comparison2.png}
+    \caption{Numerical comparison of different theoretical lower bounds for the marginal coverage of conformal prediction sets computed with a naive early stopping benchmark (e.g., Algorithm~\ref{alg:naive-multi}), as a function of the nominal significance level $\alpha$. Left: lower bounds for the marginal coverage as a function of $\alpha$, when $T = 1000$ and $n_{\text{es-cal}}= 1000$.
+Right: theoretically corrected significance level necessary needed to achieve the marginal coverage guarantees expected at the nominal $\alpha$ level, as a function of $\alpha$ when $T = 1000$ and $n_{\text{es-cal}}= 1000$. The dashed grey lines indicate the ideal values corresponding to standard conformal inferences based on calibration data that are independent of those used for early stopping. Higher values correspond to tighter bounds.
+}
+    \label{fig:bound_alpha}
+\end{figure}
+
+
+\section{Main algorithms} \label{app:algorithms}
+
+\begin{algorithm}[H]
+    \caption{Conformalized early stopping for outlier detection}
+    \label{alg:od_full_seq}
+    \begin{algorithmic}[1]
+        \STATE \textbf{Input}: Exchangeable data points $Z_1, \ldots, Z_n$; test point $Z_{n+1}$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} One-class classifier trainable via (stochastic) gradient descent.
+        \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
+        \STATE Train the one-class classifier for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
+        \STATE Pick the most promising model $\hat{M}_{\text{ces}}(Z_{n+1})$ according to~\eqref{eq:ces-model}, using the data in $\mathcal{D}_{\text{es-cal}} \cup \{n+1\}$.
+        \STATE Compute nonconformity scores $\hat{S}_i(Z_{n+1})$ for all $i \in \mathcal{D}_{\text{es-cal}} \cup \{n+1\}$ using model $\hat{M}_{\text{ces}}(Z_{n+1})$.
+        \STATE \textbf{Output}: Conformal p-value $\hat{u}_0(Z_{n+1})$ given by \eqref{eq:conformal_pval}.
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+    \caption{Conformalized early stopping for multi-class classification}
+    \label{alg:class_full_seq}
+    \begin{algorithmic}[1]
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with labels $Y_i \in [K]$.
+        \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} $K$-class classifier trainable via (stochastic) gradient descent.
+        \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
+        \STATE Train the $K$-class classifier for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
+        \FOR{$ y \in [K]$}
+        \STATE Define $\mathcal{D}^y_{\text{es-cal}} = \{i \in \mathcal{D}_{\text{es-cal}} : Y_i = y \}$ and imagine $Y_{n+1}=y$.
+        \STATE Pick the model $\hat{M}_{\text{ces}}(X_{n+1},y)$ according to~\eqref{eq:ces-model-class}, using the data in $\mathcal{D}_{\text{es-cal}} \cup \{n+1\}$.
+        \STATE Compute scores $\hat{S}_i^y(X_{n+1})$ for all $i \in \mathcal{D}^y_{\text{es-cal}} \cup \{n+1\}$ using $\hat{M}_{\text{ces}}(X_{n+1},y)$; see Appendix~\ref{app:class-scores}.
+        \STATE Compute the conformal p-value $\hat{u}_y(X_{n+1})$ according to \eqref{eq:conformal_pval-class}.
+        \ENDFOR
+        \STATE \textbf{Output}: Prediction set $\hat{C}_{\alpha}(X_{n+1})$ given by \eqref{eq:pred-set-class}.
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+    \caption{Conformalized early stopping for regression}
+    \label{alg:reg}
+    \begin{algorithmic}[1]
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with outcomes $Y_i \in \mathbb{R}$.
+        \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} Regression model trainable via (stochastic) gradient descent.
+        \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
+        \STATE Train the regression model for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
+        \STATE Evaluate $\hat{M}_{\text{ces}}(X_{n+1},y)$ as in \eqref{eq:reg-step-func}, using Algorithm~\ref{alg:envelope}.
+        \STATE Partition the domain of $Y$ into $L$ intervals $\mathcal{B}_l$, for $l \in [L]$, based on the knots of $\hat{M}_{\text{ces}}(X_{n+1},y)$.
+        \FOR{$ l \in [L]$}
+        \STATE Evaluate nonconformity scores $\hat{S}_i(X_{n+1},\mathcal{B}_l)$ for all $i \in \mathcal{D}_{\text{es-cal}}$ as in \eqref{eq:scores-reg}.
+        \STATE Compute $\hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l)$ as the $\lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil$-th largest value among $\hat{S}_i(X_{n+1},\mathcal{B}_l)$.
+ \STATE Construct the interval $\hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l)$ according to~\eqref{eq:reg-int-tmp}.
+%        \STATE Define $\mathcal{D}^y_{\text{es-cal}} = \{i \in \mathcal{D}_{\text{es-cal}} : Y_i = y \}$ and imagine $Y_{n+1}=y$.
+%        \STATE Pick the model $\hat{M}_{\text{ces}}(X_{n+1},y)$ according to~\eqref{eq:ces-model-class}, using the data in $\mathcal{D}_{\text{es-cal}} \cup \{n+1\}$.
+%        \STATE Compute scores $\hat{S}_i(X_{n+1},y)$ for all $i \in \mathcal{D}_{\text{es-cal}} \cup \{n+1\}$ using $\hat{M}_{\text{ces}}(X_{n+1},y)$; see Appendix~\ref{app:class-scores}.
+%        \STATE Compute the conformal p-value $\hat{u}_y(X_{n+1})$ according to \eqref{eq:conformal_pval-class}.
+        \ENDFOR
+        \STATE \textbf{Output}: Prediction interval $\hat{C}_{\alpha}(X_{n+1})$ given as a function of $\{\hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l)\}_{l=1}^{L}$ by \eqref{eq:reg-int}.
+    \end{algorithmic}
+\end{algorithm}
+
+
+\section{Classification with marginal coverage} \label{app:class-marg}
+
+The conformalized early stopping method presented in Section~\ref{sec:classification} can be easily modified to produce prediction sets with marginal rather than label-conditional coverage, as outlined in Algorithm~\ref{alg:class_full_seq_marg}.
+The difference between Algorithm~\ref{alg:class_full_seq}  and Algorithm~\ref{alg:class_full_seq_marg} is that the latter utilizes all calibration data in $\mathcal{D}_{\text{es-cal}}$ to compute each conformal p-value $\hat{u}_y(X_{n+1})$, not only the samples with true label $y$.
+An advantage of this approach is that conformal p-values based on a larger calibration samples are less aleatoric~\cite{bates2021testing} and require less conservative finite-sample corrections (i.e., the ``+1'' term the numerator of the p-value formula becomes more negligible as the calibration set size increases).
+In turn, this tends to lead to smaller prediction sets with potentially more stable coverage conditional on the calibration data~\cite{sesia2020comparison,bates2021testing}
+Of course, the downside of these prediction sets is that they can only be guaranteed to provide marginal coverage, although they can sometimes also perform well empirically in terms of label-conditional coverage~\cite{romano2020classification}.
+\begin{theorem}\label{thm:class_full_marg}
+Assume $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ are exchangeable random samples, and let $\hat{C}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:class_full_seq_marg}, for any $\alpha \in (0,1)$. Suppose Algorithm~\ref{alg:class_full_seq_marg} is based on a multi-class classifier that is invariant to permutations of the training data. Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
+\end{theorem}
+
+
+
+\begin{algorithm}[H]
+    \caption{Conformalized early stopping for multi-class classification with marginal coverage}
+    \label{alg:class_full_seq_marg}
+    \begin{algorithmic}[1]
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with labels $Y_i \in [K]$.
+        \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} $K$-class classifier trainable via (stochastic) gradient descent.
+        \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
+        \STATE Train the $K$-class classifier for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
+        \FOR{$ y \in [K]$}
+        \STATE Imagine $Y_{n+1}=y$.
+        \STATE Pick the model $\hat{M}_{\text{ces}}(X_{n+1},y)$ according to~\eqref{eq:ces-model-class}, using the data in $\mathcal{D}_{\text{es-cal}} \cup \{n+1\}$.
+        \STATE Compute scores $\hat{S}_i(X_{n+1},y)$ for all $i \in \mathcal{D}_{\text{es-cal}} \cup \{n+1\}$ using $\hat{M}_{\text{ces}}(X_{n+1},y)$; see Appendix~\ref{app:class-scores}.
+        \STATE Compute the conformal p-value $\hat{u}^{\text{marg}}_y(X_{n+1})$ according to
+        \begin{align}\label{eq:conformal_pval-class_marg}
+          \hat{u}^{\text{marg}}_y(X_{n+1}) = \frac{1 + |i \in \mathcal{D}_{\text{es-cal}}: \hat{S}_{i}^y(X_{n+1}) \leq \hat{S}_{n+1}^y(X_{n+1})|}{1+|\mathcal{D}_{\text{es-cal}}|}.
+        \end{align}
+        \ENDFOR
+        \STATE \textbf{Output}: Prediction set $\hat{C}_{\alpha}(X_{n+1})$ given by \eqref{eq:pred-set-class}, with $\hat{u}^{\text{marg}}_y(X_{n+1})$ instead of $\hat{u}_y(X_{n+1})$.
+    \end{algorithmic}
+\end{algorithm}
+
+
+\section{Review of nonconformity scores for classification} \label{app:class-scores}
+
+This section reviews the relevant background on the adaptive nonconformity scores for classification developed by \citet{romano2020classification}.
+For any $x \in \mathcal{X}$ and $y \in [K]$, let $\hat{\pi}_{y}(x)$ denote any (possibly very inaccurate) estimate of the true $\mathbb{P}[ Y = y \mid X =x]$ corresponding to the unknown data-generating distribution. Concretely, a typical choice of $\hat{\pi}$ may be given by the output of the final softmax layer of a neural network classifier, for example.
+ For any $x \in \mathcal{X}$ and $\tau \in [0,1]$, define the \emph{generalized conditional quantile} function $L$, with input $x, \hat{\pi}, \tau$, as:
+\begin{align} \label{eq:oracle-threshold}
+  L(x; \hat{\pi}, \tau) & = \min \{ k \in [K] \ : \ \hat{\pi}_{(1)}(x) + \hat{\pi}_{(2)}(x) + \ldots + \hat{\pi}_{(k)}(x) \geq \tau \},
+  \end{align}
+where $\hat{\pi}_{(1)}(x) \leq \hat{\pi}_{(2)}(x) \leq \ldots \hat{\pi}_{(K)}(x)$ are the order statistics of $\hat{\pi}_{1}(x) \leq \hat{\pi}_{2}(x) \leq \ldots \hat{\pi}_{K}(x)$.
+Intuitively, $L(x; \hat{\pi}, \tau)$ gives the size of the smallest possible subset of labels whose cumulative probability mass according to $\hat{\pi}$ is at least $\tau$.
+Define also a function $\mathcal{S}$ with input $x$, $u \in (0,1)$, $\hat{\pi}$, and $\tau$ that computes the set of most likely labels up to (but possibly excluding) the one identified by $L(x; \hat{\pi}, \tau)$:
+\begin{align} \label{eq:define-S}
+    \mathcal{S}(x, u ; \hat{\pi}, \tau) & =
+    \begin{cases}
+    \text{ `$y$' indices of the $L(x ; \hat{\pi},\tau)-1$ largest $\hat{\pi}_{y}(x)$},
+    & \text{ if } u \leq V(x ; \hat{\pi},\tau) , \\
+    \text{ `$y$' indices of the $L(x ; \hat{\pi},\tau)$ largest $\hat{\pi}_{y}(x)$},
+    & \text{ otherwise},
+    \end{cases}
+\end{align}
+where
+\begin{align*}
+    V(x; \hat{\pi}, \tau) & =  \frac{1}{\hat{\pi}_{(L(x ; \hat{\pi}, \tau))}(x)} \left[\sum_{k=1}^{L(x ; \hat{\pi}, \tau)} \hat{\pi}_{(k)}(x) - \tau \right].
+\end{align*}
+Then, define the \textit{generalized inverse quantile} nonconformity score function $s$, with input $x,y,u;\hat{\pi}$, as:
+\begin{align} \label{eq:define-scores}
+    s(x,y,u;\hat{\pi}) & = \min \left\{ \tau \in [0,1] : y \in \mathcal{S}(x, u ; \hat{\pi}, \tau) \right\}.
+\end{align}
+Intuitively, $s(x,y,u;\hat{\pi})$ is the smallest value of $\tau$ for which the set $\mathcal{S}(x, u ; \hat{\pi}, \tau)$ contains the label $y$.
+Finally, the nonconformity score for a data point $(X_i,Y_i)$ is given by:
+\begin{align}
+  \hat{S}_i
+  & = s(X_i,Y_i,U_i;\hat{\pi}),
+\end{align}
+where $U_i$ is a uniform random variable independent of anything else. Note that this can also be equivalently written more explicitly as:
+\begin{align}
+  \hat{S}_i
+  & = \hat{\pi}_{(1)}(X_i) + \hat{\pi}_{(2)}(X_i) + \ldots + \hat{\pi}_{(r(Y_i,\hat{\pi}(X_i)))}(X_i) - U_i\cdot \hat{\pi}_{(r(Y_i,\hat{\pi}(X_i)))}(X_i),
+\end{align}
+where $r(Y_i,\hat{\pi}(X_i))$ is the rank of $Y_i$ among the possible labels $y \in [K]$ based on $\hat{\pi}_y(X_i)$, so that $r(y,\hat{\pi}(X_i))=1$ if $\hat{\pi}_{y}(X_i) = \hat{\pi}_{(1)}(X_i)$.
+The idea motivating this construction is that the nonconformity score $\hat{S}_i$ defined above is guaranteed to be uniformly distributed on $[0,1]$ conditional on $X$ if the model $\hat{\pi}$ estimates the true unknown $\mathbb{P}[ Y = y \mid X =x]$ accurately for all $x \in \mathcal{X}$.
+This is a desirable property in conformal inference because it leads to statistically efficient prediction sets that can often achieve relatively high feature-conditional coverage in practice, even if the true data-generating distribution is such that some observations are much noisier than others; see \citet{romano2020classification} for further details.
+
+Finally, we conclude this appendix by noting that the nonconformity scores in  Section~\ref{sec:classification} are written as $\hat{S}_i(X_{n+1},y)$, instead of the more compact notation $\hat{S}_i$ adopted here, simply to emphasize that they are computed based on class probabilities $\hat{\pi}$ estimated by a data-driven model $\hat{M}$ that depends on the test features $X_{n+1}$ as well as on the placeholder label $y$ for $Y_{n+1}$.
+
+\section{Efficient computation of the lower envelope of many parabolas} \label{app:parabolas}
+
+This section explains how to implement a computationally efficient divide-and-conquer algorithm for finding the lower envelope of a family of $T$ parabolas at cost $\mathcal{O}(T \log T)$ \cite{devillers1995incremental,nielsen1998output}.
+This solution, outlined in Algorithm~\ref{alg:envelope}, is useful to implement the proposed CES method for regression problems, as detailed in Algorithm~\ref{alg:reg}.
+
+%\todoyanfei[inline]{Study the relevant background from \cite{devillers1995incremental,nielsen1998output} and write Algorithm~\ref{alg:envelope}.}
+
+\begin{algorithm}[H]
+    \caption{Divide-and-conquer algorithm for finding the lower envelope of many parabolas}
+    \label{alg:envelope}
+    \begin{algorithmic} [1]
+        \STATE \textbf{Input}: A set of parabolas $L = \{l_1, l_2, \dots, l_T \}$ of forms $l_i = a_i x^2 + b_i x + c_i$ for $i=1,\dots, T$.
+        \STATE Randomly split $L$ into two subsets. Repeat splitting until each subset only contains one parabola or is empty.
+        \STATE For each subset with only one parabola, set the parabola itself as the lower envelope and set the initial breakpoint list to $[-\infty, +\infty]$.
+        \FOR{each interval constructed by adjacent breakpoints}
+            \STATE Within the interval, identify the two parabolas contributing to the previous lower envelopes, denoted as $P_1$, $P_2$.
+            \STATE Evaluate $P_1$ and $P_2$ at the current interval endpoints.
+            \STATE Calculate the intersection point $p$ of $P_1$ and $P_2$. There exists at most one such $p$ because $a_i = 1, \forall i$, by~\eqref{eq:loss-ces-reg}.
+            \IF{$p$ not exists or $p$ exists but lies outside the current interval}
+            \STATE Set the new lower envelope as the parabola with smaller values computed at the interval endpoints.
+            \ELSE \STATE Add $p$ as a breakpoint.
+            \STATE Within the current interval, set the new lower envelope below and above $p$ based on evaluations of the parabolas at the interval endpoints.
+            \ENDIF
+            \STATE Update and sort the breakpoint list and update the new lower envelope.
+        \ENDFOR
+        \STATE Recursively merge two lower envelopes to form a new lower envelope by repeating Lines 4--15.
+        \STATE \textbf{Output}: A sorted dictionary of breakpoints and parabola indices fully characterizing the lower envelope of $L$.
+\end{algorithmic}
+\end{algorithm}
+
+
+
+\section{Avoiding empty predictions in CES for regression} \label{app:reg-noempty}
+
+This section presents Algorithm~\ref{alg:reg-noempty}, which extends Algorithm~\ref{alg:reg} from Section~\ref{sec:regression} in such a way as to explicitly avoid returning empty prediction intervals.
+
+\begin{algorithm}[H]
+    \caption{Conformalized early stopping for regression, avoiding empty predictions}
+    \label{alg:reg-noempty}
+    \begin{algorithmic}[1]
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with outcomes $Y_i \in \mathbb{R}$.
+        \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} Regression model trainable via (stochastic) gradient descent.
+        \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
+        \STATE Train the regression model for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
+        \STATE Evaluate $\hat{C}_{\alpha}(X_{n+1})$ using Algorithm~\ref{alg:reg}.
+        \IF{$\hat{C}_{\alpha}(X_{n+1}) = \emptyset$}
+        \STATE Evaluate $\hat{C}^{\text{naive}}_{\alpha}(X_{n+1})$ using Algorithm~\ref{alg:naive-reg}. Set $\hat{C}_{\alpha}(X_{n+1}) = \hat{C}^{\text{naive}}_{\alpha}(X_{n+1})$.
+        \ENDIF
+        \STATE \textbf{Output}: A non-empty prediction interval $\hat{C}_{\alpha}(X_{n+1})$.
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{corollary}\label{thm:reg-noempty}
+Assume $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ are exchangeable random samples, and let $\hat{C}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:reg-noempty}, for any $\alpha \in (0,1)$. Suppose Algorithm~\ref{alg:reg-noempty} calls Algorithm~\ref{alg:reg} based on a regression learning algorithm that is invariant to permutations of the training data. Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
+\end{corollary}
+
+
+
+\clearpage
+\section{Additional results from numerical experiments} \label{app:numerical-results}
+
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/exp_regression_bike.pdf}
+    \caption{Performance of conformal prediction intervals based on regression models trained with different methods, on the {\em bike} data set~\cite{data-bike}. The results are shown as a function of the total sample size. The nominal marginal coverage level is 90\%. See Table~\ref{fig:exp_regression_bike} for standard errors.}
+    \label{fig:exp_regression_bike}
+\end{figure}
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/exp_regression_concrete.pdf}
+    \caption{Performance of conformal prediction intervals based on regression models trained with different methods, on the {\em concrete} data set~\cite{data-concrete}. The results are shown as a function of the total sample size. The nominal marginal coverage level is 90\%. See Table~\ref{fig:exp_regression_concrete} for standard errors.}
+    \label{fig:exp_regression_concrete}
+\end{figure}
+
+\begin{table}[!htb]
+\centering
+    \caption{Performance of outlier detection based on classification models trained with different methods, on the {\em CIFAR10} data set~\cite{cifar10}. Other details are as in Figure~\ref{fig:exp_oc}. The numbers in parenthesis indicate standard errors. The numbers in bold highlight TPR values within 1 standard error of the best TPR across all methods, for each sample size.}
+  \label{tab:exp_oc}
+  \input{tables/exp_oc.tex}
+\end{table}
+
+\begin{table}[!htb]
+\centering
+    \caption{Performance of multi-class classification based on classification models trained with different methods, on the {\em CIFAR10} data set~\cite{cifar10}. Other details are as in Figure~\ref{fig:exp_mc}. The numbers in parenthesis indicate standard errors. The numbers in bold highlight cardinality values within 1 standard error of the best cardinality across all methods, for each sample size.}
+  \label{tab:exp_mc}
+  \input{tables/exp_mc.tex}
+\end{table}
+
+
+\begin{table}[!htb]
+\centering
+    \caption{Performance of conformal prediction intervals based on regression models trained with different methods, on the {\em bio} data set~\cite{data-bio}. Other details are as in Figure~\ref{fig:exp_regression_bio}. The numbers in parenthesis indicate standard errors. The numbers in bold highlight width values within 1 standard error of the best width across all methods, for each sample size. The numbers in red highlight coverage values below 0.85.}
+  \label{tab:exp_regression_bio}
+  \input{tables/exp_regression_bio.tex}
+\end{table}
+
+\begin{table}[!htb]
+\centering
+    \caption{Performance of conformal prediction intervals based on regression models trained with different methods, on the {\em bike} data set~\cite{data-bike}. Other details are as in Figure~\ref{fig:exp_regression_bike}. The numbers in parenthesis indicate standard errors. The numbers in bold highlight width values within 1 standard error of the best width across all methods, for each sample size. The numbers in red highlight coverage values below 0.85.}
+  \label{tab:exp_regression_bike}
+  \input{tables/exp_regression_bike.tex}
+\end{table}
+
+\begin{table}[!htb]
+\centering
+    \caption{Performance of conformal prediction intervals based on regression models trained with different methods, on the {\em concrete} data set~\cite{data-concrete}. Other details are as in Figure~\ref{fig:exp_regression_concrete}. The numbers in parenthesis indicate standard errors. The numbers in bold highlight width values within 1 standard error of the best width across all methods, for each sample size. The numbers in red highlight coverage values below 0.85.}
+  \label{tab:exp_regression_concrete}
+  \input{tables/exp_regression_concrete.tex}
+\end{table}
+
+\clearpage
+
+\section{Mathematical proofs} \label{appendix:proofs}
+
+\begin{proof}[Proof of Theorem \ref{thm:od_full}]
+It suffices to show that the nonconformity scores $\hat{S}_i$ for $i \in \{n+1\}\cup \mathcal{D}_{\text{es-cal}}$ are exchangeable. In fact, if the nonconformity scores are almost-surely unique, this implies the rank of $\hat{S}_{n+1}$ is uniformly distributed over $\{\hat{S}_{i}\}_{i \in \{n+1\}\cup \mathcal{D}_{\text{es-cal}}}$, and in that case the conformal p-value is uniformly distributed over $\{ 1/(1+|\mathcal{D}_{\text{es-cal}}|), 2/(1+|\mathcal{D}_{\text{es-cal}}|), \dots, 1\}$. If the nonconformity scores are not almost-surely unique and ties are not broken at random, then the distribution of the conformal p-value becomes stochastically larger than uniform, in which case the result still holds.
+To prove the exchangeability of the nonconformity scores, let $\sigma$ be any permutation of $\{n+1\}\cup \mathcal{D}_{\text{es-cal}}$, and imagine applying Algorithm~\ref{alg:od_full_seq}, with the same random seed, to the shuffled data set indexed by $\sigma(\{n+1\}\cup \mathcal{D}_{\text{es-cal}})$, which has the same distribution as the original data set. To clarify the notation, we will refer to quantities computed under this data shuffling scenario with their usual symbol followed by an apostrophe; i.e., $M'_{t_1}$ instead of $M_{t_1}$.
+As the gradient updates only involve the unperturbed observations in $\mathcal{D}_{\text{train}}$ and the maximum number of epochs $t^{\text{max}}$ is fixed, the sequence of saved models remains exactly the same under this scenario: $(M'_{t_1} , \dots, M'_{t_T}) = (M_{t_1} , \dots, M_{t_T})$.
+Further, the loss function in~\eqref{eq:loss-ces} is also invariant to permutations of $\{n+1\}\cup \mathcal{D}_{\text{es-cal}}$, in the sense that $\mathcal{L}_{\text{es-cal}}^{+1'} = \mathcal{L}_{\text{es-cal}}^{+1}$, because $\mathcal{L}$ is additive.
+Therefore, the model selected according to \eqref{eq:ces-model} is also invariant, $\hat{M}'_{\text{ces}} = \hat{M}_{\text{ces}}$, which implies the nonconformity scores are simply re-ordered: $\hat{S}'_{\sigma(i)} = \hat{S}_{i}$.
+Therefore, we have:
+\begin{align*}
+  \sigma(\{\hat{S}_i\}_{i \in \{n+1\}\cup \mathcal{D}_{\text{cal}}})
+  &= \{\hat{S}'_i\}_{i \in \{n+1\}\cup \mathcal{D}_{\text{cal}}} \\
+  & \overset{d}{=} \{\hat{S}_i\}_{i \in \{n+1\}\cup \mathcal{D}_{\text{cal}}},
+\end{align*}
+where the last equality follows from the initial data exchangeability assumption.
+\end{proof}
+
+\begin{proof}[Proof of Theorem \ref{thm:class_full}]
+Note that, conditional on $Y_{n+1}=y$, the miscoverage event $Y_{n+1} \not\in \hat{\mathcal{C}}_{\alpha}(X_{n+1})$ occurs if and only if $\hat{u}_y(X_{n+1}) \leq \alpha$, where $\hat{u}_y(X_{n+1})$ is defined as in~\eqref{eq:conformal_pval-class}.
+Therefore, it suffices to show $\mathbb{P}\left[\hat{u}_y(X_{n+1}) \leq \alpha \mid Y_{n+1}=y\right] \leq \alpha$ for any $\alpha \in (0,1)$.
+However, this is directly implied by Theorem \ref{thm:od_full}, because the $\hat{u}_y(X_{n+1})$ calculated by Algorithm~\ref{alg:class_full_seq} is equivalent to the conformal p-value $\hat{u}_0(Z_{n+1})$ given by Algorithm~\ref{alg:od_full_seq} applied to the subset of the data in $\mathcal{D}_{\text{es-cal}}$ with $Y_{i} = y$, with the understanding that $Z_i=(X_i,Y_i)$ for all $i \in \{n+1\} \cup \mathcal{D}_{\text{es-cal}}$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem \ref{thm:class_full_marg}]
+Note that $Y_{n+1} \not\in \hat{\mathcal{C}}^{\text{m}}_{\alpha}(X_{n+1})$ if and only if $\hat{u}^{\text{marg}}(X_{n+1};Y_{n+1}) \leq \alpha$, where $\hat{u}^{\text{marg}}(X_{n+1};Y_{n+1})$ is defined as in~\eqref{eq:conformal_pval-class_marg}. Hence it suffices to show that $\mathbb{P}\left[\hat{u}^{\text{marg}}(X_{n+1};Y_{n+1}) \leq \alpha \right] \leq \alpha$ for any $\alpha \in (0,1)$.
+This can be established using the same approach as in the proof of Theorem~\ref{thm:od_full}, setting $Z_i=(X_i,Y_i)$ for all $i \in \{n+1\} \cup \mathcal{D}_{\text{es-cal}}$.
+In fact, the maximum number of epochs $t^{\text{max}}$ is fixed, the sequence of saved models is invariant to permutations of $\{n+1\} \cup \mathcal{D}_{\text{es-cal}}$, and the model $\hat{M}_{\text{ces}}$ selected according to \eqref{eq:ces-model-class} is also invariant.
+Thus, it follows that the nonconformity scores $\hat{S}_i$ are exchangeable with one another for all $i \in \{n+1\} \cup \mathcal{D}_{\text{es-cal}}$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem \ref{thm:reg}]
+Consider an imaginary oracle algorithm producing an interval $\hat{C}^{\text{oracle}}_{\alpha}(X_{n+1})$ defined as $\hat{C}^{\text{oracle}}_{\alpha}(X_{n+1}) = \mathcal{B}_{l^*(Y_{n+1})} \bigcap \hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_{l^*(Y_{n+1})})$, where $l^*(Y_{n+1})$ is the exact index of the bin $\mathcal{B}_l$ to which the true $Y_{n+1}$ belongs. Clearly, this oracle is just a theoretical tool, not a practical method because the outcome value for the test point is unknown.
+However, this oracle is useful because it is easier to analyze, and it suffices to establish that $\mathbb{P}[Y_{n+1} \in \hat{C}^{\text{oracle}}_{\alpha}(X_{n+1})] \geq 1-\alpha$, for any $\alpha \in (0,1)$, since $\hat{C}_{\alpha}(X_{n+1}) \supseteq \hat{C}^{\text{oracle}}_{\alpha}(X_{n+1})$ almost-surely.
+The coverage property for the oracle can be established using an approach similar to that of the proof of Theorem~\ref{thm:od_full}, setting $Z_i=(X_i,Y_i)$ for all $i \in \{n+1\} \cup \mathcal{D}_{\text{es-cal}}$.
+In fact, the maximum number of epochs $t^{\text{max}}$ is fixed, the sequence of saved models is invariant to permutations of $\{n+1\} \cup \mathcal{D}_{\text{es-cal}}$, and the  model $\hat{M}_{\text{ces}}$ selected by the oracle according to \eqref{eq:reg-step-func} is also invariant.
+Thus, it follows that the oracle nonconformity scores $\hat{S}_i^* = \hat{S}_i(X_{n+1}, \mathcal{B}_{l^*(Y_{n+1})})$ are exchangeable with one another for all $i \in \{n+1\} \cup \mathcal{D}_{\text{es-cal}}$.
+Further, by construction of the prediction intervals~\eqref{eq:reg-int-tmp}, we know that the miscoverage event $Y_{n+1} \not\in \hat{C}^{\text{oracle}}_{\alpha}(X_{n+1})$ occurs if and only if $\hat{S}^*_i > \hat{Q}^*_{1-\alpha}$, where $\hat{Q}^*_{1-\alpha}$ is the $\lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil$-th largest value among all nonconformity scores $\hat{S}_i(X_{n+1},\mathcal{B}_l)$.
+However, it is a well-known exchangeability result that $\mathbb{P}[\hat{S}^*_i \leq \hat{Q}^*_{1-\alpha}] \geq 1-\alpha$; see for example Lemma 1 in \citet{romano2019conformalized}.
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{thm:reg-noempty}]
+This corollary follows immediately from Theorem~\ref{thm:reg} because the prediction interval given by Algorithm~\ref{alg:reg-noempty} is always contained in that output by Algorithm~\ref{alg:reg}.
+\end{proof}
+
+
+\begin{proof}[Proof of Proposition~\ref{prop:naive-od}]
+Note that $\hat{u}_0^{\textup{naive}}(Z_{n+1}) = \hat{u}_0^{\textup{naive}}(Z_{n+1};t^*)$, hence
+    \begin{align*}
+        \P{\hat{u}_0^{\textup{naive}}(Z_{n+1}) > \alpha} &= \mathbb{E} \bigl [\P{\hat{u}_0^{\textup{naive}}(Z_{n+1};t^*) > \alpha \mid \mathcal{D}_{\text{es-cal}}} \bigr ] \\
+        &\geq \E{\min_{t\in [T]} W_t}        \\
+        & \geq \sup_{a \in [0,1]} a \cdot \P{\min_{t\in [T]} W_t \geq a}\\
+        &= \sup_{a \in [0,1]} a \left(1-\P{\min_{t\in [T]} W_t \leq a} \right)  \\
+        &\geq \sup_{a \in [0,1]} a \left(1-T \cdot \P{W_t \leq a} \right),
+   \end{align*}
+where the last inequality follows from a union bound. To simplify the right-hand-side term above, let $a= I^{-1} \left(\frac{1}{bT};n_{\text{es-cal}}+1-l,l \right)$, where $b$ is any large constant. Hence we obtain
+\begin{align*}
+    \P{\hat{u}_0^{\textup{naive}}(Z_{n+1}) > \alpha} \geq I^{-1} \left(\frac{1}{bT};n_{\text{es-cal}}+1-l,l \right) \cdot (1-1/b).
+\end{align*}
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{prop:naive-class}]
+   Note that $Y_{n+1} \in \hat{C}^{\textup{naive}}_{\alpha}(X_{n+1})$ if and only if $\hat{u}^{\textup{naive}}_{Y_{n+1}}(X_{n+1};t^*) > \alpha$. Let $W_t$ denote the calibration conditional coverage $\P{\hat{u}^{\textup{naive}}_{Y_{n+1}}(X_{n+1};t) > \alpha \mid \mathcal{D}_{\text{es-cal}}}$. Then, we have
+   \begin{align*}
+       \P{Y_{n+1} \in \hat{C}^{\textup{naive}}_{\alpha}(X_{n+1})}
+     = \mathbb{E}\left [\P{\hat{u}^{\textup{naive}}_{Y_{n+1}}(X_{n+1};t^*) > \alpha \mid \mathcal{D}_{\text{es-cal}}} \right ]
+       = \E{W_{t^*}} \geq \E{\min_{t\in [T]} W_t}.
+   \end{align*}
+The rest of the proof follows the same argument as in the proof of Proposition \ref{prop:naive-od}.
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{prop:naive-reg}]
+    Let $\hat{S}_i(X_{n+1}, t) = | Y_i - \hat{\mu}_{t}(X_i)|$ denote the residual score calculated with model $t \in [T]$, for all $i \in \mathcal{D}_{\text{es-cal}} $. Note that $Y_{n+1} \in \hat{C}^{\textup{naive}}_{\alpha}(X_{n+1})$ if and only if $\hat{S}_{X_{n+1}}(X_{n+1}, t^*) \leq \hat{Q}_{1-\alpha}$. Then, we just need to bound $W_t=\P{ \hat{S}_{X_{n+1}}(X_{n+1}, t^*) \leq \hat{Q}_{1-\alpha} \mid \mathcal{D}_{\text{es-cal}}}$, and the rest of the proof follows the same steps as the proof of Proposition~\ref{prop:naive-od}.
+\end{proof}
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
