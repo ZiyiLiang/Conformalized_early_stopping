@@ -16,7 +16,7 @@ results.raw <- do.call("rbind", lapply(ifile.list, function(ifile) {
 }))
 
 key.values <- c("M-coverage", "M-size")
-key.labels <- c("Coverage (marginal)", "Width")
+key.labels <- c("Coverage (marginal)", "Cardinality")
 
 Method.values <- c("CES", "Naive", "Theory", "Data Splitting", "Full Training")
 Method.labels <- c("CES", "Naive", "Naive + theory", "Data splitting", "Full training")
@@ -74,14 +74,14 @@ make_table <- function(xmax=2000) {
     group_by(n_data, Key) %>%
     mutate(Value.best = min(Value)) %>%
     ungroup() %>%
-    mutate(Value.str=ifelse((Key=="Width")*(Value-Value.se<Value.best)==1, sprintf("\\textbf{%s}", Value.str), Value.str)) %>%
+    mutate(Value.str=ifelse((Key=="Cardinality")*(Value-Value.se<Value.best)==1, sprintf("\\textbf{%s}", Value.str), Value.str)) %>%
     select(Method, n_data, Key, Value.str) %>%
     pivot_wider(names_from="Key", values_from="Value.str") %>%
     arrange(n_data, Method) %>%
-    select(n_data, Method, Width, everything())
+    select(n_data, Method, Cardinality, everything())
   tb1 <- df %>%
     kbl("latex", booktabs=TRUE, longtable = TRUE, escape = FALSE, caption = NA,
-        col.names = c("Sample size", "Method", "Width", "Marignal coverage")) %>%
+        col.names = c("Sample size", "Method", "Cardinality", "Marignal coverage")) %>%
     pack_rows(index = table(df$n_data))
   
   
