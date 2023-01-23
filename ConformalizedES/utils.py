@@ -106,10 +106,8 @@ def eval_lc_psets(S,y):
         label = i
         idx = np.where(y==label)[0]
         coverage, length, length_cover = eval_psets(np.array(S, dtype=object)[idx], np.array(y)[idx])
-    
+
     results_tmp["LC-coverage"] = [coverage]
     results_tmp["LC-size"] = [length]
     results_tmp["LC-size|cov"] = [length_cover]
     return results_tmp
-
-

@@ -155,7 +155,7 @@ class ConformalizedES:
             avg_val_loss = total_val_loss / (len(targets) * len(self.val_loader))
             self.val_loss_history.append(avg_val_loss)
             self.total_val_loss_history.append(total_val_loss)
-            
+
 
             if self.acc:
                 avg_val_acc = 100 * (total_val_acc / len(self.val_loader))
@@ -185,9 +185,9 @@ class ConformalizedES:
     def get_loss(self, inputs, targets):
         self.net.eval()
         inputs, targets = inputs.to(self.device), targets.to(self.device)
-      
+
         with th.no_grad():
-            outputs = self.net(inputs)	
+            outputs = self.net(inputs)
             loss = self.criterion(outputs, inputs, targets)
 
         # NOTE. Careful: the variable loss is the loss averaged over all data points in the batch

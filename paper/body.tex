@@ -282,7 +282,7 @@ The use of CES for outlier detection is demonstrated using the {\em CIFAR10} dat
 A convolutional neural network with ReLU activation functions is trained on a subset of the data to minimize the cross-entropy loss. The maximum number of epochs is set to be equal to 50.
 The trained classification model is then utilized to compute conformity scores for outlier detection with the convention that cats are inliers and the other classes are outliers.
 In particular, a nonconformity score for each $Z_{n+1}$ is defined as 1 minus the output of the soft-max layer corresponding to the label ``cat''.
-This can be interpreted as an estimated probability of $Z_{n+1}$ not being an outlier.
+This can be interpreted as an estimated probability of $Z_{n+1}$ being an outlier.
 After translating these scores into a conformal p-value $\hat{u}_0(Z_{n+1})$, the null hypothesis that $Z_{n+1}$ is a cat is rejected if $\hat{u}_0(Z_{n+1}) \leq \alpha = 0.1$.
 
 The total number of samples utilized for training, early stopping, and conformal calibration is varied between 500 and 2000.
