@@ -20,7 +20,7 @@ The key idea of conformal inference is to apply a pre-trained model to a {\em ca
 If the calibration data are exchangeable with the test point of interest, the model performance on the calibration set can be translated into statistically rigorous predictive inferences.
 This framework is flexible and can accommodate different learning tasks, including out-of-distribution testing~\cite{smith2015conformal}, classification~\cite{vovk2003mondrian}, and regression~\cite{vovk2005algorithmic}.
 For example, in the context of classification, conformal inference can give prediction sets that contain the correct label for a new data point with high probability.
-In theory, the quality of the trained model has no consequence on the {\em average} validity of conformal inferences, but it does affect their reliability and usefulness on an case-by-case level.
+In theory, the quality of the trained model has no consequence on the {\em average} validity of conformal inferences, but it does affect their reliability and usefulness on a case-by-case level.
 In particular, conformal uncertainty estimates obtained after calibrating an overconfident model may be too conservative for some test cases and too optimistic for others~\cite{romano2020classification}.
 The goal of this paper is to combine conformal calibration with standard early stopping training techniques as efficiently as possible, in order to produce more reliable predictive inferences with a finite amount of available data.
 
@@ -56,8 +56,8 @@ Finally, this paper draws inspiration from \citet{kim2020predictive}, which show
 
 \subsection{Standard conformal inference and early stopping} \label{sec:setup}
 
-Consider $n$ data points, $Z_i$ for $i \in \mathcal{D} = [n] = \{1,\ldots,n\}$, sampled exchangeably (e.g., i.i.d.)~from an unknown distribution $P_{Z}$ with support on some space $\mathcal{Z}$. Consider also an additional test sample, $Z_{n+1}$, which may or may not be drawn from $P_Z$ exchangeably with the data in $\mathcal{D}$.
-In the context of outlier detection, one wishes to test whether $Z_{n+1}$ was indeed sampled exchangeably from $P_Z$.
+Consider $n$ data points, $Z_i$ for $i \in \mathcal{D} = [n] = \{1,\ldots,n\}$, sampled exchangeably (e.g., i.i.d.)~from an unknown distribution $P_{Z}$ with support on some space $\mathcal{Z}$. Consider also an additional test sample, $Z_{n+1}$. 
+In the context of outlier detection, one wishes to test whether $Z_{n+1}$ was sampled exchangeably from $P_Z$.
 In classification or regression, one can write $Z_i = (X_i, Y_i)$, where $X_i$ is a feature vector while $Y_i$ is a discrete category or a continuous response, and the goal is to predict the unobserved value of $Y_{n+1}$ given $X_{n+1}$ and the data in $\mathcal{D}$.
 
 The standard pipeline begins by randomly splitting the data in $\mathcal{D}$ into three disjoint subsets: $\mathcal{D}_{\text{train}}, \mathcal{D}_{\text{es}}, \mathcal{D}_{\text{cal}} \subset [n]$.
@@ -128,7 +128,7 @@ Note that the computational cost of evaluating~\eqref{eq:ces-model} is negligibl
 
 Next, the selected model $\hat{M}_{\text{ces}}(Z_{n+1})$ is utilized to compute a conformal p-value~\cite{bates2021testing} to test whether $Z_{n+1}$ is an inlier.
 In particular, $\hat{M}_{\text{ces}}(Z_{n+1})$ is utilized to compute {\em nonconformity scores} $\hat{S}_i(Z_{n+1})$ for all samples $i \in \mathcal{D}_{\text{es-cal}} \cup \{n+1\}$. These scores rank the observations in $\mathcal{D}_{\text{es-cal}} \cup \{n+1\}$ based on how the one-class classifier $\hat{M}_{\text{ces}}(Z_{n+1})$ perceives them to be similar to the training data; by convention, a smaller value of $\hat{S}_i(Z_{n+1})$ suggests $Z_i$ is more likely to be an outlier.
-Suitable scores are typically included in the output of standard one-class classification models, such those provided by the Python library PyTorch.
+Suitable scores are typically included in the output of standard one-class classification models, such as those provided by the Python library PyTorch.
 For simplicity, we assume all scores are almost-surely distinct; otherwise, ties can be broken at random by adding a small amount of independent noise. Then, the conformal p-value $\hat{u}_0(Z_{n+1})$ is given by the usual formula:
 \begin{align}\label{eq:conformal_pval}
     \hat{u}_0(Z_{n+1}) = \frac{1 + |i \in \mathcal{D}_{\text{es-cal}}: \hat{S}_{i} \leq \hat{S}_{n+1}|}{1+|\mathcal{D}_{\text{es-cal}}|},
@@ -149,13 +149,13 @@ Assume $Z_{1}, \ldots, Z_{n}, Z_{n+1}$ are exchangeable random samples, and let 
 The above CES method will now be extended to deal with $K$-class classification problems, for any $K \geq 2$.
 Consider $n$ exchangeable pairs of observations $(X_i,Y_i)$, for $i \in \mathcal{D} = [n]$, and a test point $(X_{n+1}, Y_{n+1})$ whose label $Y_{n+1} \in [K]$ has not yet been observed. The goal is to construct an informative prediction set for $Y_{n+1}$ given the observed features $X_{n+1}$ and the rest of the data, assuming $(X_{n+1},Y_{n+1})$ is exchangeable with the observations indexed by $\mathcal{D}$.
 An ideal goal would be to construct the smallest possible prediction set with guaranteed {\em feature-conditional coverage} at level $1-\alpha$, for any fixed $\alpha \in (0,1)$. Formally, a prediction set $\hat{C}_{\alpha}(X_{n+1}) \subseteq [K]$ has feature-conditional coverage at level $1-\alpha$ if $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1}) \mid X_{n+1} = x] \geq 1-\alpha$, for any $x \in \mathcal{X}$, where $\mathcal{X}$ is the feature space.
-Unfortunately, perfect feature-conditional coverage is extremely difficult to achieve unless the feature space $\mathcal{X}$ is very small. Therefore, in practice one must be satisfied with obtaining relatively weaker guarantees, such as {\em label-conditional coverage} and {\em marginal coverage}. Formally,  $\hat{C}_{\alpha}(X_{n+1})$ has $1-\alpha$ label-conditional coverage if $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1}) \mid Y_{n+1} = y] \geq 1-\alpha$, for any $y \in [K]$, while marginal coverage corresponds to $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1}) ] \geq 1-\alpha$. Label-conditional coverage is stronger than marginal coverage, but both criteria are useful because the latter is easier to achieve with smaller (and hence more informative) prediction sets.
+Unfortunately, perfect feature-conditional coverage is extremely difficult to achieve unless the feature space $\mathcal{X}$ is very small. Therefore, in practice, one must be satisfied with obtaining relatively weaker guarantees, such as {\em label-conditional coverage} and {\em marginal coverage}. Formally,  $\hat{C}_{\alpha}(X_{n+1})$ has $1-\alpha$ label-conditional coverage if $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1}) \mid Y_{n+1} = y] \geq 1-\alpha$, for any $y \in [K]$, while marginal coverage corresponds to $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1}) ] \geq 1-\alpha$. Label-conditional coverage is stronger than marginal coverage, but both criteria are useful because the latter is easier to achieve with smaller (and hence more informative) prediction sets.
 
 
 We begin by focusing on label-conditional coverage, as this follows most easily from the results of Section~\ref{sec:outlier}. This solution will be extended in Appendix~\ref{app:class-marg} to target marginal coverage.
 The first step of CES consists of randomly splitting $\mathcal{D}$ into two subsets, $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$, as in Section~\ref{sec:outlier}. The samples in $\mathcal{D}_{\text{es-cal}}$ are further divided into subsets $\mathcal{D}^y_{\text{es-cal}}$ with homogeneous labels; that is, $\mathcal{D}^y_{\text{es-cal}} = \{i \in \mathcal{D}_{\text{es-cal}} : Y_i = y \}$ for each $y \in [K]$.
 The data in $\mathcal{D}_{\text{train}}$ are utilized to train a neural network classifier via stochastic gradient descent, storing the intermediate candidate models $M_t$ after each $\tau$ epochs.
-This is essentially the same approach as in Section~\ref{sec:outlier}, with the only difference that the neural network is now designed to perform $K$-class classification rather than one-class classification. Therefore, this neural network should have a soft-max layer with $K$ nodes near its output, whose values corresponding to an input data point with features $x$ are denoted as $\hat{\pi}_y(x)$, for all $y \in [K]$.
+This is essentially the same approach as in Section~\ref{sec:outlier}, with the only difference being that the neural network is now designed to perform $K$-class classification rather than one-class classification. Therefore, this neural network should have a soft-max layer with $K$ nodes near its output, whose values corresponding to an input data point with features $x$ are denoted as $\hat{\pi}_y(x)$, for all $y \in [K]$.
 Intuitively, we will interpret $\hat{\pi}_y(x)$ as approximating (possibly inaccurately) the true conditional data-generating distribution; i.e., $\hat{\pi}_{y}(x) \approx \P{Y=y \mid X=x}$.
 
 For any model $M_t$, any $x \in \mathcal{X}$, and any $y \in [K]$, define the augmented loss $\mathcal{L}_{\text{es-cal}}^{+1}(M_t,x,y)$  as:
@@ -169,7 +169,7 @@ Then, for any $y \in [K]$, CES selects the model $\hat{M}_{\text{ces}}(X_{n+1},y
 \hat{M}_{\text{ces}}(X_{n+1},y) = \argmin_{M_{t_j} \, : \, 1 \leq j \leq T} \mathcal{L}_{\text{es-cal}}^{+1}(M_{t_j},X_{n+1},y).
 \end{align}
 The selected model $\hat{M}_{\text{ces}}(X_{n+1},y)$ is then utilized to compute a conformal p-value for testing whether $Y_{n+1}=y$.
-In particular, we compute nonconformity scores $\hat{S}_i^y(X_{n+1})$ for all $i \in \mathcal{D}^y_{\text{es-cal}} \cup \{n+1\}$, imagining that $Y_{n+1}=y$. Different types of nonconformity scores can be easily accommodated, but in this paper we follow the {\em adaptive} strategy of~\citet{romano2020classification}. The computation of these nonconformity scores based on the selected model $\hat{M}_{\text{ces}}$ is reviewed in Appendix~\ref{app:class-scores}.
+In particular, we compute nonconformity scores $\hat{S}_i^y(X_{n+1})$ for all $i \in \mathcal{D}^y_{\text{es-cal}} \cup \{n+1\}$, imagining that $Y_{n+1}=y$. Different types of nonconformity scores can be easily accommodated, but in this paper, we follow the {\em adaptive} strategy of~\citet{romano2020classification}. The computation of these nonconformity scores based on the selected model $\hat{M}_{\text{ces}}$ is reviewed in Appendix~\ref{app:class-scores}.
 Here, we simply note the p-value is given by:
 \begin{align}\label{eq:conformal_pval-class}
     \hat{u}_y(X_{n+1}) = \frac{1 + |i \in \mathcal{D}^y_{\text{es-cal}}: \hat{S}^y_{i} \leq \hat{S}^y_{n+1}|}{1+|\mathcal{D}^y_{\text{es-cal}}|},
@@ -197,7 +197,7 @@ The novel solution described below is designed to leverage the particular struct
 However, similar ideas could also be repurposed to accommodate other scores, such as those based on quantile regression~\cite{romano2019conformalized}, conditional distributions~\cite{chernozhukov2019distributional,izbicki2019flexible}, or conditional histograms~\cite{sesia2021conformal}.
 
 As usual, we randomly split $\mathcal{D}$ into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
-The data in $\mathcal{D}_{\text{train}}$ are utilized to train a neural network via stochastic gradient descent, storing the intermediate models $M_t$ after each $\tau$ epochs.
+The data in $\mathcal{D}_{\text{train}}$ are utilized to train a neural network via stochastic gradient descent, storing the intermediate models $M_t$ after each $\tau$ epoch.
 The approach is similar to those in Sections~\ref{sec:outlier}--\ref{sec:classification}, although now the output of a model $M_t$ applied to a sample with features $x$ is denoted by $\hat{\mu}_t(x)$ and is designed to approximate (possibly inaccurately) the conditional mean of the unknown data-generating distribution; i.e., $\hat{\mu}_t(x) \approx \E{Y \mid X=x}$. (Note that we will omit the superscript $t$ unless necessary to avoid ambiguity).
 For any model $M_t$ and any $x \in \mathcal{X}$, $y \in [K]$, define
 \begin{align} \label{eq:loss-ces-reg}
@@ -230,7 +230,7 @@ Therefore, $\hat{M}_{\text{ces}}(X_{n+1},y)$ has $L$ distinct steps, for some $L
 \begin{align} \label{eq:reg-step-func}
   \hat{M}_{\text{ces}}(X_{n+1},y) = \sum_{l=1}^{L} m_l(X_{n+1}) \I{y \in (k_{l-1}, k_{l}] },
 \end{align}
-for some known sequence $m_l(X_{n+1}) \in [T]$ such that $m_l(X_{n+1}) \neq m_{l-1}(X_{n+1})$ for all $l \in [L]$.
+where $m_l(X_{n+1}) \in [T]$ represents the best model selected within the interval $(k_{l-1}, k_{l}]$ such that $m_l(X_{n+1}) \neq m_{l-1}(X_{n+1})$ for all $l \in [L]$.
 Above, $k_{1}\leq k_{2} \leq \dots \leq k_{L}$ denote the {\em knots} of $\hat{M}_{\text{ces}}(X_{n+1},y)$, which also depend on $X_{n+1}$ and are defined as the boundaries in the domain of $y$ between each consecutive pair of steps, with the understanding that $k_0 = -\infty$ and $k_{L+1} = +\infty$.
 Then, for each step $l \in [L]$, let $\mathcal{B}_l$ indicate the interval $\mathcal{B}_l = (k_{l-1}, k_{l}]$ and, for all $i \in \mathcal{D}_{\text{es-cal}}$, evaluate the nonconformity score $\hat{S}_i(X_{n+1},\mathcal{B}_l)$ for observation $(X_i,Y_i)$ based on the regression model indicated by $m_l(X_{n+1})$; i.e.,
 \begin{align} \label{eq:scores-reg}
@@ -243,7 +243,7 @@ Let $\hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l)$ denote the $\lceil (1-\alpha)(1+
 %   \hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l) = \lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil\text{-th largest value in }
 %   \left\{ \hat{S}_i(X_{n+1},\mathcal{B}_l) \right\}_{i \in \mathcal{D}_{\text{es-cal}}}.
 % \end{align}
- Then, define the interval $\hat{C}_{\alpha}(X_{n+1}, ,\mathcal{B}_l)$ as that obtained by applying the standard conformal prediction method with absolute residual scores based on the regression model $\hat{\mu}_{m_l(X_{n+1})}(X_{n+1})$:
+ Then, define the interval $\hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l)$ as that obtained by applying the standard conformal prediction method with absolute residual scores based on the regression model $\hat{\mu}_{m_l(X_{n+1})}(X_{n+1})$:
 \begin{align} \label{eq:reg-int-tmp}
   \hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l) = \hat{\mu}_{m_l(X_{n+1})}(X_{n+1}) \pm \hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l).
 \end{align}
@@ -267,7 +267,7 @@ The purpose of the final convex hull operation is to CES outputs a contiguous pr
 %for the sake of interpretability.
 %In fact, while non-convex prediction sets may be desirable in certain applications \cite{izbicki2020cd}, contiguous intervals are often easier for practitioners to interpret in a regression setting~\cite{sesia2021conformal}.
 
-Although it is unlikely, Algorithm~\ref{alg:reg} may sometimes produce an empty set, which is an uninformative and potentially confusing output. A simple solution consists of replacing any empty output with the naive conformal prediction interval computed by Algorithm~\ref{alg:naive-reg} in Appendix~\ref{app:naive-benchmarks}, which leverages an early-stopped model selected by looking at original calibration data set without the test point.
+Although it is unlikely, Algorithm~\ref{alg:reg} may sometimes produce an empty set, which is an uninformative and potentially confusing output. A simple solution consists of replacing any empty output with the naive conformal prediction interval computed by Algorithm~\ref{alg:naive-reg} in Appendix~\ref{app:naive-benchmarks}, which leverages an early-stopped model selected by looking at the original calibration data set without the test point.
 This approach is outlined by Algorithm~\ref{alg:reg-noempty} in Appendix~\ref{app:reg-noempty}.
 As the intervals given by Algorithm~\ref{alg:reg-noempty} always contain those output by Algorithm~\ref{alg:reg}, it follows that Algorithm~\ref{alg:reg-noempty} also enjoys guaranteed coverage; see Corollary~\ref{thm:reg-noempty}.
 
@@ -335,12 +335,12 @@ These data are allocated for specific training, early-stopping, and calibration 
 The performance of each method is measured in terms of marginal coverage, worst-slab conditional coverage~\cite{cauchois2020knowing}---estimated as described in \citet{sesia2020comparison}---and average width of the prediction intervals. All results are averaged over 100 independent experiments, each based on a different random sample from the original raw data sets.
 
 
-Figure~\ref{fig:exp_regression_bio} summarizes the performance of the four alternative methods on the {\em bio} data, as a function of the total sample size;  see Table~\ref{fig:exp_regression_bike} in Appendix~\ref{app:numerical-results} for the corresponding standard errors. These results show that all methods reach 90\% marginal coverage in practice, as anticipated by the mathematical guarantees, although the theoretical correction for the naive early stopping method appears to be overly conservative. The CES method clearly performs best, in the sense that it leads to the shortest prediction intervals while also achieving approximately valid conditional coverage. By contrast, the conformal prediction intervals obtained without early stopping have significantly lower conditional coverage, consistently with the prior intuition that fully trained neural networks can sometimes suffer from overfitting.
+Figure~\ref{fig:exp_regression_bio} summarizes the performance of the four alternative methods on the {\em bio} data, as a function of the total sample size;  see Table~\ref{fig:exp_regression_bike} in Appendix~\ref{app:numerical-results} for the corresponding standard errors. These results show that all methods reach 90\% marginal coverage in practice, as anticipated by the mathematical guarantees, although the theoretical correction for the naive early stopping method appears to be overly conservative. The CES method clearly performs best, in the sense that it leads to the shortest prediction intervals while also achieving approximately valid conditional coverage. By contrast, the conformal prediction intervals obtained without early stopping have significantly lower conditional coverage, which is consistent with the prior intuition that fully trained neural networks can sometimes suffer from overfitting.
 More detailed results from these experiments can be found in Table~\ref{tab:exp_regression_bio} in Appendix~\ref{app:numerical-results}.
 Analogous results corresponding to the {\em bike} and {\em concrete} data sets can be found in Figures~\ref{fig:exp_regression_bike}--\ref{fig:exp_regression_concrete} and Tables~\ref{tab:exp_regression_bike}--\ref{tab:exp_regression_concrete} in Appendix~\ref{app:numerical-results}.
 
 Finally, it must be noted that the widths of the prediction intervals output by the CES method in these experiments are very similar to those of the corresponding intervals produced by naively applying early stopping without data splitting and without the theoretical correction described in Appendix~\ref{app:naive-benchmarks}.
-This naive approach was not taken as a benchmark because it does not guarantee valid coverage, unlike the other methods. Nonetheless, it is interesting to note that the rigorous theoretical properties of the CES method do not come at the expense of a significant loss of power compared to this very aggressive heuristic, and in this sense one may say that the conformal inferences computed by CES are ``almost free''.
+This naive approach was not taken as a benchmark because it does not guarantee valid coverage, unlike the other methods. Nonetheless, it is interesting to note that the rigorous theoretical properties of the CES method do not come at the expense of a significant loss of power compared to this very aggressive heuristic, and in this sense, one may say that the conformal inferences computed by CES are ``almost free''.
 
 
 
