@@ -531,7 +531,7 @@ class CES_regression(ConformalizedES):
 
         return envelope
 
-    def select_model_new(self, test_inputs = None, return_time_elapsed = False):
+    def select_model(self, test_inputs = None, return_time_elapsed = False):
         """Return selected best models and their associated intervals based on the resulting lower envelope
         Args:
             test_inputs (tensor): test covariates
