@@ -324,7 +324,7 @@ def apply_conformal(selected_model):
             if (method=="benchmark") or (method=="naive") or (method=="theory"):
                 ci_method = C_PI.benchmark_ICP(input, selected_model)
             else:
-                best_models = reg_model.select_model_new(input)
+                best_models = reg_model.select_model(input)
                 ci_method = C_PI.CES_icp(input, best_models, method = 'cvxh')
 
             pi_BM.append(ci_method)
@@ -398,7 +398,7 @@ def apply_conformal(selected_model):
 val_loss = np.mean(reg_model.val_loss_history[-20:])
 
 # Test the best model
-bm_loss, bm_model, loss_history = reg_model.select_model_new()
+bm_loss, bm_model, loss_history = reg_model.select_model()
 best_epoch = np.argmin(loss_history) + 1
 results_best = apply_conformal(bm_model)
 

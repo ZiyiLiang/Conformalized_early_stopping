@@ -261,7 +261,7 @@ class Conformal_PI:
         self.alpha = alpha
         self.verbose = verbose
         if y_hat_min is None:
-            self.y_hat_max = -np.inf
+            self.y_hat_min = -np.inf
         else:
             self.y_hat_min = y_hat_min
         if y_hat_max is None:
