@@ -1,6 +1,6 @@
 # CES (Conformalized Early Stopping)
 This repository implements *Conformalized Early Stopping*: a novel method that combines early stopping with conformal calibration using only one set of hold-out data while convetional methods require additional data-splitting or conservative adjustments to meet the same theoretical guarantees. 
-
+Accompanying paper is available on arxiv: <https://arxiv.org/abs/2301.11556>
 
 ## Contents
 
