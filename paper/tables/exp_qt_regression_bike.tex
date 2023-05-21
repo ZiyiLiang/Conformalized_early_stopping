@@ -1,0 +1,33 @@
+\begin{tabular}[t]{rlllll}
+\toprule
+\multicolumn{4}{c}{ } & \multicolumn{2}{c}{Coverage} \\
+\cmidrule(l{3pt}r{3pt}){5-6}
+Sample size & Data & Method & Width & Marginal & Conditional\\
+\midrule
+\addlinespace[0.3em]
+\multicolumn{6}{l}{\textbf{200}}\\
+\hspace{1em}200 & bike & CES & \textbf{2.690 (0.065)} & 0.923 (0.006) & 0.895 (0.014)\\
+\hspace{1em}200 & bike & Naive + theory & 4.106 (0.192) & 0.979 (0.003) & 0.958 (0.008)\\
+\hspace{1em}200 & bike & Data splitting & \textbf{2.663 (0.056)} & 0.899 (0.008) & \textcolor{red}{0.832 (0.018)}\\
+\hspace{1em}200 & bike & Full training & 2.843 (0.095) & 0.910 (0.006) & 0.870 (0.012)\\
+\addlinespace[0.3em]
+\multicolumn{6}{l}{\textbf{500}}\\
+\hspace{1em}500 & bike & CES & \textbf{2.244 (0.039)} & 0.913 (0.004) & 0.886 (0.014)\\
+\hspace{1em}500 & bike & Naive + theory & 4.284 (0.152) & 0.991 (0.002) & 0.984 (0.005)\\
+\hspace{1em}500 & bike & Data splitting & \textbf{2.275 (0.032)} & 0.902 (0.004) & 0.859 (0.014)\\
+\hspace{1em}500 & bike & Full training & \textbf{2.265 (0.062)} & 0.908 (0.004) & \textcolor{red}{0.839 (0.014)}\\
+\addlinespace[0.3em]
+\multicolumn{6}{l}{\textbf{1000}}\\
+\hspace{1em}1000 & bike & CES & 1.978 (0.036) & 0.911 (0.004) & 0.872 (0.013)\\
+\hspace{1em}1000 & bike & Naive + theory & 2.590 (0.061) & 0.968 (0.002) & 0.955 (0.007)\\
+\hspace{1em}1000 & bike & Data splitting & 1.996 (0.040) & 0.903 (0.004) & 0.852 (0.013)\\
+\hspace{1em}1000 & bike & Full training & \textbf{1.625 (0.045)} & 0.901 (0.005) & 0.858 (0.013)\\
+\addlinespace[0.3em]
+\multicolumn{6}{l}{\textbf{2000}}\\
+\hspace{1em}2000 & bike & CES & 1.262 (0.030) & 0.902 (0.003) & 0.854 (0.012)\\
+\hspace{1em}2000 & bike & Naive + theory & 1.570 (0.033) & 0.948 (0.003) & 0.933 (0.009)\\
+\hspace{1em}2000 & bike & Data splitting & 1.517 (0.033) & 0.893 (0.003) & 0.853 (0.011)\\
+\hspace{1em}2000 & bike & Full training & \textbf{1.061 (0.019)} & 0.887 (0.004) & \textcolor{red}{0.839 (0.013)}\\
+\bottomrule
+\end{tabular}
+

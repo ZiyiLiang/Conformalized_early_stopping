@@ -1,0 +1,34 @@
+
+\begin{tabular}[t]{rlllll}
+\toprule
+\multicolumn{4}{c}{ } & \multicolumn{2}{c}{Coverage} \\
+\cmidrule(l{3pt}r{3pt}){5-6}
+Sample size & Data & Method & Width & Marginal & Conditional\\
+\midrule
+\addlinespace[0.3em]
+\multicolumn{6}{l}{\textbf{200}}\\
+\hspace{1em}200 & homes & CES & 1.396 (0.047) & 0.924 (0.007) & \textcolor{red}{0.804 (0.016)}\\
+\hspace{1em}200 & homes & Naive + theory & 2.607 (0.222) & 0.983 (0.004) & 0.931 (0.015)\\
+\hspace{1em}200 & homes & Data splitting & 1.329 (0.049) & 0.907 (0.006) & \textcolor{red}{0.730 (0.029)}\\
+\hspace{1em}200 & homes & Full training & \textbf{1.195 (0.053)} & 0.919 (0.008) & \textcolor{red}{0.674 (0.030)}\\
+\addlinespace[0.3em]
+\multicolumn{6}{l}{\textbf{500}}\\
+\hspace{1em}500 & homes & CES & 0.997 (0.022) & 0.909 (0.007) & \textcolor{red}{0.842 (0.016)}\\
+\hspace{1em}500 & homes & Naive + theory & 2.698 (0.308) & 0.989 (0.003) & 0.950 (0.017)\\
+\hspace{1em}500 & homes & Data splitting & 0.985 (0.019) & 0.896 (0.006) & \textcolor{red}{0.810 (0.020)}\\
+\hspace{1em}500 & homes & Full training & \textbf{0.940 (0.043)} & 0.913 (0.007) & \textcolor{red}{0.710 (0.019)}\\
+\addlinespace[0.3em]
+\multicolumn{6}{l}{\textbf{1000}}\\
+\hspace{1em}1000 & homes & CES & 0.858 (0.015) & 0.910 (0.005) & \textcolor{red}{0.827 (0.017)}\\
+\hspace{1em}1000 & homes & Naive + theory & 1.229 (0.039) & 0.969 (0.004) & 0.917 (0.015)\\
+\hspace{1em}1000 & homes & Data splitting & 0.926 (0.020) & 0.905 (0.004) & \textcolor{red}{0.786 (0.021)}\\
+\hspace{1em}1000 & homes & Full training & \textbf{0.755 (0.019)} & 0.902 (0.005) & \textcolor{red}{0.698 (0.019)}\\
+\addlinespace[0.3em]
+\multicolumn{6}{l}{\textbf{2000}}\\
+\hspace{1em}2000 & homes & CES & 0.726 (0.016) & 0.902 (0.005) & \textcolor{red}{0.824 (0.013)}\\
+\hspace{1em}2000 & homes & Naive + theory & 0.865 (0.013) & 0.949 (0.003) & 0.880 (0.013)\\
+\hspace{1em}2000 & homes & Data splitting & 0.779 (0.011) & 0.900 (0.003) & \textcolor{red}{0.804 (0.013)}\\
+\hspace{1em}2000 & homes & Full training & \textbf{0.653 (0.013)} & 0.889 (0.005) & \textcolor{red}{0.686 (0.019)}\\
+\bottomrule
+\end{tabular}
+
