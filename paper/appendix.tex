@@ -34,7 +34,7 @@ Note that Algorithm~\ref{alg:naive-multi} also allows for the possibility of com
     \caption{Naive conformal outlier detection benchmark with greedy early stopping}
     \label{alg:naive-one}
     \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $Z_1, \ldots, Z_n$; test point $Z_{n+1}$.
+        \STATE \textbf{Input}: Data points $Z_1, \ldots, Z_n$; test point $Z_{n+1}$.
         \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} One-class classifier trainable via (stochastic) gradient descent.
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
@@ -49,7 +49,7 @@ Note that Algorithm~\ref{alg:naive-multi} also allows for the possibility of com
     \caption{Naive conformal multi-class classification benchmark with greedy early stopping}
     \label{alg:naive-multi}
     \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with labels $Y_i \in [K]$.
+        \STATE \textbf{Input}: Data points \textcolor{blue}{$(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$} with labels $Y_i \in [K]$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
         \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} $K$-class classifier trainable via (stochastic) gradient descent.
@@ -79,7 +79,7 @@ Note that Algorithm~\ref{alg:naive-multi} also allows for the possibility of com
     \caption{Naive conformal regression benchmark with greedy early stopping}
     \label{alg:naive-reg}
     \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with outcomes $Y_i \in \mathbb{R}$.
+        \STATE \textbf{Input}: Data points \textcolor{blue}{$(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$} with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
         \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} Regression model trainable via (stochastic) gradient descent.
