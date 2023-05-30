@@ -355,7 +355,9 @@ This naive approach was not taken as a benchmark because it does not guarantee v
 
 \subsection{Quantile regression}
 
-Section~\ref{sec:regression-cqr-short}
+Appendix~\ref{app:numerical-results} contains the results of additional numerical experiments investigating the performance of the CES quantile regression method mentioned in Section~\ref{sec:regression-cqr-short} and explained in Appendix~\ref{sec:quantile-regression}.
+These experiments are carried out using the following publicly available and commonly investigated regression data sets from the UCI Machine Learning repository \cite{Pinar2012}: medical expenditure panel survey number 21 ({\em MEPS\_21}) \cite{meps_21}; blog feedback ({\em blog\_data}) \cite{blog_data}; Tennessee’s student teacher achievement ratio ({\em STAR}) \cite{star}; community and crimes ({\em community}) \cite{community}; physicochemical properties of protein tertiary structure ({\em bio})~\cite{data-bio}; house sales in King County ({\em homes}) \cite{homes}; and hourly and daily counts of rental bikes ({\em bike})~\cite{data-bike}. These data sets were previously also considered by \citet{romano2019conformalized}.
+The results demonstrate that the CES method compares favorably, in terms of the conditional coverage and average length of the output prediction intervals, to the analogous quantile regression versions of the benchmark approaches considered above.
 
 
 \section{Discussion} \label{sec:discussion}
