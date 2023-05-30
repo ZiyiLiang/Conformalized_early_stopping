@@ -222,7 +222,7 @@ This implies $\hat{M}_{\text{ces}}(X_{n+1},y)$ is a step function, whose paramet
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.75\linewidth]{diagrams/quadratic_loss.pdf}
-    \caption{Squared-error loss on test-augmented hold-out data for three alternative regression models $M_1, M_2$ and $M_3$, as a function of the place-holder outcome $y$ for the test point. The CES method utilizes the best model for each possible value of $y$, which is identified by the lower envelope of these three parabolas. In this case, the lower envelope has two knots, $k_{1}$ and $k_{3}$.}
+    \caption{Squared-error loss on test-augmented hold-out data for three alternative regression models $M_1, M_2$ and $M_3$, as a function of the place-holder outcome $y$ for the test point. The CES method utilizes the best model for each possible value of $y$, which is identified by the lower envelope of these three parabolas. In this case, the lower envelope has two finite knots at $k_{1}$ and $k_{3}$.}
     \label{fig:quadratic_losses}%
 \end{figure}
 
@@ -238,7 +238,7 @@ Then, for each step $l \in [L]$, let $\mathcal{B}_l$ indicate the interval $\mat
 \end{align}
 
 
-Let $\hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l)$ denote the $\lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil$-th largest value among all nonconformity scores $\hat{S}_i(X_{n+1},\mathcal{B}_l)$, assuming for simplicity that there are no ties; otherwise, ties can be broken at random.
+Let $\hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l)$ denote the $\lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil$-th smallest value among all nonconformity scores $\hat{S}_i(X_{n+1},\mathcal{B}_l)$, assuming for simplicity that there are no ties; otherwise, ties can be broken at random.
 % \begin{align} \label{eq:scores-reg-q}
 %   \hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l) = \lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil\text{-th largest value in }
 %   \left\{ \hat{S}_i(X_{n+1},\mathcal{B}_l) \right\}_{i \in \mathcal{D}_{\text{es-cal}}}.
@@ -267,78 +267,22 @@ The purpose of the final convex hull operation is to CES outputs a contiguous pr
 %for the sake of interpretability.
 %In fact, while non-convex prediction sets may be desirable in certain applications \cite{izbicki2020cd}, contiguous intervals are often easier for practitioners to interpret in a regression setting~\cite{sesia2021conformal}.
 
+One may intuitively be concerned that this method may output excessively wide prediction interval if the location of $\{\mathcal{B}_l \cap \hat{C}_\alpha(X_{n+1}, \mathcal{B}_l)\}$ is extremely large in absolute value.
+However, our numerical experiments will demonstrate that, as long as the number of calibration data points is not too small, the selected models typically give predictions that are reasonably concentrated around the true test response regardless of the placeholder value $y$. Therefore, the interval $\hat{C}_\alpha(X_{n+1}, \mathcal{B}_l)$ tends to be concentrated around the true $y$ even if $\mathcal{B}_l$ is far away, in which case $\hat{C}_\alpha(X_{n+1}, \mathcal{B}_l) \cap \mathcal{B}_l = \emptyset$ does not expand the final prediction interval $\hat{C}_\alpha(X_{n+1})$.
+
+
 Although it is unlikely, Algorithm~\ref{alg:reg} may sometimes produce an empty set, which is an uninformative and potentially confusing output. A simple solution consists of replacing any empty output with the naive conformal prediction interval computed by Algorithm~\ref{alg:naive-reg} in Appendix~\ref{app:naive-benchmarks}, which leverages an early-stopped model selected by looking at the original calibration data set without the test point.
 This approach is outlined by Algorithm~\ref{alg:reg-noempty} in Appendix~\ref{app:reg-noempty}.
 As the intervals given by Algorithm~\ref{alg:reg-noempty} always contain those output by Algorithm~\ref{alg:reg}, it follows that Algorithm~\ref{alg:reg-noempty} also enjoys guaranteed coverage; see Corollary~\ref{thm:reg-noempty}.
 
 
-\color{blue}
-\subsection{CES for quantile regression} \label{sec:quantile-regression}
+\subsection{CES for quantile regression} \label{sec:regression-cqr-short}
 
-A limitation of the method described in the previous section is that it is not adaptive to heteroscedasticity because it produces prediction intervals with constant length regardless of the input features \cite{romano2019conformalized}.
-Here, we address this limitation by extending CES to the conformalized quantile regression (CQR) method of \citet{romano2019conformalized}, which is briefly reviewed in Appendix~\ref{sec:quantile-regression-review}.
+The CES method for regression described in Section~\ref{sec:regression} relies on classical nonconformity scores~\cite{vovk2005algorithmic,lei2016RegressionPS} that are not designed to deal efficiently with heteroscedastic data~\cite{romano2019conformalized,sesia2020comparison}.
+However, the general idea can be extended to accommodate virtually any other type of nonconformity score, including existing options based on quantile regression~\cite{romano2019conformalized}, conditional distributions~\cite{chernozhukov2019distributional,izbicki2019flexible}, or conditional histograms~\cite{sesia2021conformal}.
+The reason why we have so far focused on the classical absolute residual scores is that they are more intuitive to apply in conjunction with an early stopping criterion based on the squared-error loss.
+The extension of the CES method to the conformalized quantile regression (CQR) method of \citet{romano2019conformalized} is developed explicitly in Appendix~\ref{sec:quantile-regression}.
 
-%Same as in the previous section, consider a dataset containing $n$ exchangeable observations $(X_i,Y_i)$, for $i \in \mathcal{D} = [n]$, and a test point $(X_{n+1}, Y_{n+1})$ with a latent label $Y_{n+1} \in \mathbb{R}$. The goal is to construct a reasonably narrow prediction interval $\hat{C}_{\alpha}(X_{n+1})$ for $Y_{n+1}$ that is guaranteed to have marginal coverage above some level $1-\alpha$, i.e., $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1}) ] \geq 1-\alpha$, can practically achieve high feature-conditional coverage, and can have locally varying length depending on the test feature $X_{n+1}$. 
-
-
-%A brief review of the conditional quantile regression is included in Appendix~\ref{sec:quantile-regression-review}. 
-We start with introducing the CES method utilizing the quantile regression and CQR. The approach is similar to that in Section~\ref{sec:regression}. Firstly, the available data $\mathcal{D}$ is randomly split into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$. The data in $\mathcal{D}_{\text{train}}$ are utilized to train a neural network minimizing the pinball loss~\eqref{eq:reg-pinball_loss} at the target quantile level $\beta$. The intermediate models $M_{\beta, t}$ are stored after each $\tau$ epoch, and the output of each stored model with input $x$, denoted as $\hat{q}_{\beta, t}(x)$, is the predicted $\beta-$th conditional quantile of the unknown conditional distribution $\mathbb{P}(Y|X=x)$. Similar to the previous section, for any model $M_{\beta, t}$ and any $x \in \mathcal{X}$, $y \in \mathbb{R}$, define the augmented loss by
-\begin{align}\label{eq:loss-ces-reg-cqr}
-\mathcal{L}_{\text{es-cal}}^{+1}(M_{\beta, t},x,y)
-  & = \mathcal{L}_{\text{es-cal}}(M_{\beta, t}) + \mathcal{L}(M_{\beta, t}, x, y) \\
-  & = \sum_{i \in \mathcal{D}_{\text{es-cal}}} \rho_\beta(Y_i, \hat{q}_{\beta, t}(X_i)) + \rho_\beta(y, \hat{q}_{\beta, t}(x))
-\end{align}
-
-
-Given a trained model $M_{\beta, t}$, the loss evaluated on $\mathcal{D}_{\text{es-cal}}$ is simply a constant. Thus, for each model $M_{\beta, t}$, the augmented loss is equal to a constant plus a convex pinball function of the latent value $y$, see the sketch in Figure~\ref{fig:pinball_losses}. Recall that finding the best models is equivalent to solving for the following optimization problem,
-\begin{align} \label{eq:ces-model-reg-cqr}
-  \hat{M}_{\beta, \text{ces}}(X_{n+1},y) = \argmin_{M_{\beta, t_j} \, : \, 1 \leq j \leq T} \mathcal{L}_{\text{es-cal}}^{+1}(M_{\beta, t_j},X_{n+1},y),
-\end{align}
-which is again equivalent to identifying the lower envelope of a family of shifted pinball loss functions. Similar as before, the lower envelope can be found in $\mathcal{O}(T \log T)$ using an efficient divide-and-conquer; see Appendix~\ref{app:lower-envelope}. Therefore, the resulting $\hat{M}_{\beta, \text{ces}}(X_{n+1},y)$ is a step function with $L$ distinct steps, for some $L = \mathcal{O}(T \log T)$ that may depend on $X_{n+1}$, and it can be written as a function of $y$ as:
-\begin{align} \label{eq:reg-step-func-cqr}
- \hat{M}_{\beta, \text{ces}}(X_{n+1},y) = \sum_{l=1}^{L} m_{\beta, l}(X_{n+1}) \I{y \in (k_{l-1}, k_{l}] },
-\end{align}
-where $m_{\beta, l}(X_{n+1}) \in [T]$ represents the best model selected within the interval $(k_{l-1}, k_{l}]$ such that $m_{\beta,l}(X_{n+1}) \neq m_{\beta, l-1}(X_{n+1})$ for all $l \in [L]$.  
-Above, $k_{1}\leq k_{2} \leq \dots \leq k_{L}$ denote the {\em knots} of $\hat{M}_{\beta, \text{ces}}(X_{n+1},y)$, which also depend on $X_{n+1}$ and are defined as the boundaries in the domain of $y$ between each consecutive pair of steps, with the understanding that $k_0 = -\infty$ and $k_{L+1} = +\infty$.
-
-To perform calibration and construct prediction interval for the test response $Y_{n+1}$, we first need to fit two conditional quantile functions at quantiles $\beta_{\text{low}}$ and $\beta_{\text{high}}$ on the training set $\mathcal{D}_{\text{train}}$ with deep neural network, meanwhile storing the intermediate models $M_{\beta_{\text{low}},t}$ and $M_{\beta_{\text{high}},t}$ after each $\tau$ epoch. Then, the best models $\hat{M}_{\beta_{\text{low}}, \text{ces}}(X_{n+1},y)$ and $\hat{M}_{\beta_{\text{high}}, \text{ces}}(X_{n+1},y)$ are selected based on the rule~\eqref{eq:ces-model-reg-cqr}, each can be written as a step function 
-\begin{align}\label{eq:reg-step-func-cqr-lowhigh}
-     \hat{M}_{\beta_{\text{low}}, \text{ces}}(X_{n+1},y) = \sum_{l=1}^{L_1} m_{\beta_{\text{low}}, l}(X_{n+1}) \I{y \in (k_{l-1}, k_{l}] },\\
-     \hat{M}_{\beta_{\text{high}}, \text{ces}}(X_{n+1},y) = \sum_{l=1}^{L_2} m_{\beta_{\text{high}}, l}(X_{n+1}) \I{y \in (s_{l-1}, s_{l}] }
-\end{align}
-The knots $k_1, \dots, k_{L_1}, s_1, \dots, s_{L_2}$ are then concatenated and sorted into $K_1 \leq K_2 \leq K_{L_1+L_2}$, so that within each interval $\mathcal{B}_l = (K_{l-1}, K_{l}]$ for step $l \in [L_1 + L_2]$, there exist exactly one best model for $\beta_{\text{low}}$ and exactly one best model for $\beta_{\text{low}}$. Then, for each interval $\mathcal{B}_l = (K_{l-1}, K_{l}]$ associated with each step $l\in[L_1 + L_2]$, for all $i \in \mathcal{D}_{\text{es-cal}}$, evaluate the nonconformity score $\hat{E}_i(X_{n+1}, \mathcal{B}_l)$ for observation $(X_i, Y_i)$ based on the regression model indicated by $m_{\beta_{\text{low}},l}(X_{n+1})$ and $m_{\beta_{\text{high}},l}(X_{n+1})$; i.e.,
-\begin{align} \label{eq:scores-reg-cqr}
-  \hat{E}_i(X_{n+1}, \mathcal{B}_l) = \max\{\hat{q}_{m_{\beta_{\text{low}},l}(X_{n+1})}(X_i) - Y_i, Y_i - \hat{q}_{m_{\beta_{\text{high}},l}(X_{n+1})}(X_i)\}
-\end{align}
-
-
-Let $\hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l)$ denote the $\lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil$-th largest value among all nonconformity scores $\hat{E}_i(X_{n+1},\mathcal{B}_l)$, assuming for simplicity that there are no ties; otherwise, ties can be broken at random. Then, define the interval $\hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l)$ as that obtained by applying the standard conformal prediction method with nonconformity scores~\eqref{eq:scores-reg-cqr} based on the quantile regression model $\hat{q}_{m_{\beta_{\text{low}},l}(X_{n+1})}(X_{n+1})$ and $\hat{q}_{m_{\beta_{\text{high}},l}(X_{n+1})}(X_{n+1})$:
-\begin{align} \label{eq:reg-int-tmp-cqr}
-  \hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l) = [\hat{q}_{m_{\beta_{\text{low}},l}(X_{n+1})}(X_{n+1}) - \hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l), \hat{q}_{m_{\beta_{\text{high}},l}(X_{n+1})}(X_{n+1}) + \hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l)]
-\end{align}
-Finally, the prediction interval $\hat{C}_{\alpha}(X_{n+1})$ is given by:
-\begin{align} \label{eq:reg-int-cqr}
-  \hat{C}_{\alpha}(X_{n+1}) = \text{Convex}\left( \cup_{l=1}^{L} \{ \mathcal{B}_l \cap \hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l) \} \right),
-\end{align}
-where $\text{Convex}(\cdot)$ denotes the convex hull of a set.
-This procedure is summarized in Algorithm~\ref{alg:reg-cqr} and it is guaranteed to produce prediction sets with valid marginal coverage.
-
-
-\begin{theorem}\label{thm:reg-cqr}
-Assume $(X_{1},Y_{1}), \ldots, (X_{n+1},Y_{n+1})$ are exchangeable, and let $\hat{C}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:reg-cqr}, as given by~\eqref{eq:reg-int-cqr}, for any given $\alpha \in (0,1)$.
-Suppose the underlying machine learning algorithm is invariant to permutations of the training data.
-Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
-\end{theorem}
-
-CES combined with CQR constructs prediction intervals whose lengths are adaptive to data heteroskedasticity, which means that the response variable $Y$ has varying variance across different values of the explanatory variable $X$. This is because the design of the nonconformity score~\eqref{eq:scores-reg-cqr}, takes both undercoverage and overcoverage into consideration \cite{romano2019conformalized}. 
-
-Moreover, one may concern that the CES regression methods in either Section~\ref{sec:regression} or Section~\ref{sec:quantile-regression} may output excessively wide prediction interval if the location of $\{\mathcal{B}_l \cap \hat{C}_\alpha(X_{n+1}, \mathcal{B}_l)\}$ is extreme (i.e. towards negative infinity or positive infinity). In our experiments, we empirically show that this would not be a concern because the selected models give predictions concentrated around the true test response regardless of the latent value $y$ and its associated interval $\mathcal{B}_l$. $\hat{C}_\alpha(X_{n+1}, \mathcal{B}_l)$ will be concentrated around the true $y$ even if $\mathcal{B}_l$ is further away, thus taking the intersection of $\hat{C}_\alpha(X_{n+1}, \mathcal{B}_l)$ and $\mathcal{B}_l$ will return an empty set which will not affect our final prediction interval $\hat{C}_\alpha(X_{n+1})$ when taking the convex hull. 
-
-Similar to Section~\ref{sec:regression}, although it is unlikely, Algorithm~\ref{alg:reg-cqr} may sometimes produce an empty set. If we want to avoid outputting empty set, a simple solution is to replace any empty output with the naive conformal prediction interval computed by Algorithm~\ref{alg:naive-reg-cqr} in Appendix~\ref{app:naive-benchmarks}. This approach is outlined by Algorithm~\ref{alg:reg-noempty-cqr} in Appendix~\ref{app:reg-noempty}.
-As the intervals given by Algorithm~\ref{alg:reg-noempty-cqr} always contain those output by Algorithm~\ref{alg:reg-cqr}, it follows that Algorithm~\ref{alg:reg-noempty-cqr} also enjoys guaranteed coverage; see Corollary~\ref{thm:reg-noempty-cqr}.
-\color{black}
-
-%whose number of steps is known~\cite{atallah1985some} to be upper bounded by $2T-1$; see Figure~\ref{fig:quadratic_losses}.
 
 \section{Numerical experiments} \label{sec:numerical_results}
 
@@ -411,30 +355,10 @@ Finally, it must be noted that the widths of the prediction intervals output by 
 This naive approach was not taken as a benchmark because it does not guarantee valid coverage, unlike the other methods. Nonetheless, it is interesting to note that the rigorous theoretical properties of the CES method do not come at the expense of a significant loss of power compared to this very aggressive heuristic, and in this sense, one may say that the conformal inferences computed by CES are ``almost free''.
 
 
-{
-\color{blue}
 \subsection{Quantile regression}
 
-Lastly, we apply the CES quantile regression method extensively to the following publicly available and commonly investigated regression datasets from the UCI Machine Learning repository \cite{Pinar2012}: medical expenditure panel survey number 21 ({\em MEPS\_21}) \cite{meps_21}; blog feedback ({\em blog\_data}) \cite{blog_data}; Tennessee’s student teacher achievement ratio ({\em STAR}) \cite{star}; community and crimes ({\em community}) \cite{community}; physicochemical properties of protein tertiary structure ({\em bio})~\cite{data-bio}; house sales in King County ({\em homes}) \cite{homes}; and hourly and daily counts of rental bikes ({\em bike})~\cite{data-bike}. These data sets were previously also considered by \citet{romano2019conformalized}.
-As in the previous sections, we compare CES to the usual three benchmarks: naive early stopping with the {\em hybrid} theoretical correction for the nominal coverage level, early stopping based on data splitting and full model training without early stopping. We follow the same model architecture and data preprocessing steps as in \cite{romano2019conformalized}. To be specific, the input features are standardized to have zero mean and unit variance, and the response values are rescaled by diving the absolute mean of the training responses. All methods utilize the same neural network with three hidden layers and ReLU activation functions between layers, trained for up to 2000 epochs. The parameters are trained minimizing the pinball loss function~\ref{eq:reg-quantile_reg} with Adam optimizer \cite{kingma2014adam}, minibatches of size 25, 0 weight decay and dropout, and fixed learning rate (0.001 for {\em STAR, homes, bike, and bio}, 0.0001 for {\em community}, and 0.00005 for {\em MEPS\_21 and blog\_data}). 
+Section~\ref{sec:regression-cqr-short}
 
-The models are calibrated in such a way as to produce conformal prediction sets with guaranteed 90\% marginal coverage for a test set of 1000 independent data points. The total sample size available for training, early stopping and calibration is varied between 200 and 2000 (200 and 1000 for small datasets such as {\em community} and {\em STAR}).
-These data are allocated for specific training, early-stopping, and calibration operations as in Sections~\ref{sec:num_od}--\ref{sec:num_mc}.
-Again, the performance of each method is measured in terms of marginal coverage, worst-slab conditional coverage~\cite{cauchois2020knowing}, and average width of the prediction intervals. All results are averaged over 25 independent experiments, each based on a different random sample from the original raw data sets.
-
-
-Figure~\ref{fig:exp_qt_regression_homes} summarizes the performance of the four alternative methods on the {\em homes} data, as a function of the total sample size; The error bar corresponding to standard errors are plotted around each data point. These results show that all methods reach 90\% marginal coverage in practice, as anticipated by the mathematical guarantees, although the theoretical correction for the naive early stopping method appears to be overly conservative. Full training, though producing the smallest prediction bands, has very low conditional coverage, which indicates that fully trained neural network models can suffer from overfitting and therefore is not appealing. Data splitting method beats full training as it gives higher approximated conditional coverage, and CES further beats data splitting in terms of conditional coverage, meanwhile producing prediction intervals of similar length as data splitting. These patterns hold true in general for additional datasets, as illustrated by Figure~\ref{fig:exp_qt_regression_community} -- Figure~\ref{fig:exp_qt_regression_bike} and by Table~\ref{tab:exp_qt_regression_homes_tab} -- Table~\ref{tab:exp_qt_regression_bike_tab} containing more numerical details in Appendix~\ref{app:numerical-results}.
-Overall, the numerical experiment results support our claim that CES quantile regression method performs the best among the methods under consideration.
-
-
-\begin{figure}[!htb]
-    \centering
-    \includegraphics[width=\linewidth]{figures/exp_qt_regression_homes.pdf}\vspace{-0.5cm}
-    \caption{\color{blue}Average performance, as a function of the sample size, of conformal prediction sets for quantile regression based on neural networks trained and calibrated with different methods, on the {\em homes} data~\cite{homes}. The marginal coverage is theoretically guaranteed to be above 90\%. Ideally, the conditional coverage should high and the prediction interval should be tight.}
-    \label{fig:exp_qt_regression_homes}
-\end{figure}
-
-}
 
 \section{Discussion} \label{sec:discussion}
 
@@ -446,12 +370,6 @@ As detailed in Appendix~\ref{app:naive-benchmarks}, the naive benchmark that use
 Of course, the naive benchmark may sometimes fail, and thus we would advise practitioners to apply the theoretically principled CES whenever its additional memory costs are not prohibitive. However, the empirical evidence suggests the naive benchmark may not be a completely unreasonable heuristic when CES is not applicable.
 
 
-Finally, it is worth noting that CES for regression was implemented in this paper using classical nonconformity scores~\cite{vovk2005algorithmic,lei2016RegressionPS} that are not designed to deal efficiently with heteroscedastic data~\cite{sesia2020comparison}.
-However, the general idea can be extended to accommodate virtually any other type of nonconformity score, including existing options based on quantile regression~\cite{romano2019conformalized}, conditional distributions~\cite{chernozhukov2019distributional,izbicki2019flexible}, or conditional histograms~\cite{sesia2021conformal}.
-The reason why this paper has focused on the classical absolute residual scores is that they are more intuitive to apply in conjunction with an early stopping criterion based on the squared-error loss.
-In the future, it would be interesting to extend the CES method as to accommodate early stopping criteria based on alternative loss functions, including for example the pinball loss for quantile regression.
-
-
 %\section*{Software Availability}
 Software implementing the algorithms and data experiments are available online at \url{https://github.com/ZiyiLiang/Conformalized_early_stopping}.
 
@@ -459,8 +377,8 @@ Software implementing the algorithms and data experiments are available online a
 \subsection*{Acknowledgements}
 %Z.~L.~ is supported by 
 The authors thank the Center for Advanced Research Computing at the University of Southern California for providing computing resources to carry out numerical experiments.
-M.~S. and Y.~Z.~ are supported by NSF grant DMS 2210637.
-M.~S.~ is also supported by an Amazon Research Award. 
+M.~S. and Y.~Z.~are supported by NSF grant DMS 2210637.
+M.~S.~is also supported by an Amazon Research Award. 
 
 
 %%% Local Variables:
