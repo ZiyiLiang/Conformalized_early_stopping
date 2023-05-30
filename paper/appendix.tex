@@ -142,24 +142,40 @@ In the following, we will denote the corresponding inverse Beta cumulative distr
 This result can be used to derive an alternative upper bound for $\mathbb{P}(\hat{u}_0^{\textup{naive}}(Z_{n+1}) > \alpha)$ using the Markov's inequality.
 
 \begin{proposition}\label{prop:naive-od}
-    Assume $Z_{1}, \ldots, Z_{n}, Z_{n+1}$ are exchangeable random samples, and let $\hat{u}^{\textup{naive}}_0(Z_{n+1})$ be the output of Algorithm~\ref{alg:naive-one}, for any given $\alpha \in (0,1)$. Suppose Algorithm~\ref{alg:naive-one} is based on a learning algorithm that is invariant to permutations of the training data.
+    Assume $Z_{1}, \ldots, Z_{n}, Z_{n+1}$ are exchangeable random samples, and let $\hat{u}^{\textup{naive}}_0(Z_{n+1})$ be the output of Algorithm~\ref{alg:naive-one}, for any given $\alpha \in (0,1)$. 
 Then, for any fixed $\alpha \in (0,1)$ and any $b>1$, letting $l=\lfloor \alpha(n_{\text{es-cal}}+1)  \rfloor$,
 $$\P{\hat{u}^{\textup{naive}}_0(Z_{n+1}) > \alpha} \geq I^{-1}\left( \frac{1}{bT};n_{\text{es-cal}}+1-l,l \right) \cdot (1-1/b).$$
 \end{proposition}
 
-Note that the bound given by Proposition~\ref{prop:naive-od} depends on $\alpha$ in a more complex way and does not have an explicit analytical form, unlike that of \citet{efficiency_first_cp}. However, this Markov bound is easy to compute numerically and often turns out to be tighter as long as $b$ is moderately large (e.g., $b=100$), as we shall see below.
+Note that this bound depends on $\alpha$ in a more complex way compared to that of \citet{efficiency_first_cp}. 
+However, its asymptotic behaviour in the large-$T$ limit remains similar, as shown below.
+
+\begin{lemma}\label{lemma:asymp}
+Denote $I^{-1}(x;n_{\text{es-cal}}+1-l,l)$ as the inverse Beta cumulative distribution function. For any fixed $b > 1$ and $\alpha \in (0,1)$ , letting $l=\lfloor \alpha(n_{\text{es-cal}}+1) \rfloor$, for sufficiently large $T$ and $n_{\text{es-cal}}$, we have:
+\begin{align*}
+    I^{-1}\left( \frac{1}{bT};n_{\text{es-cal}}+1-l,l \right) = (1-\alpha) - \sqrt{\frac{\alpha(1-\alpha)}{n_{\text{es-cal}}+1}}\cdot \sqrt{2\log(bT)} + O\left( \frac{1}{\sqrt{n_{\text{es-cal}}\log(T)}} \right).
+\end{align*}
+
+\end{lemma}
+
+In simpler terms, Lemma~\ref{lemma:asymp} implies that the coverage lower bound in Proposition \ref{prop:naive-od} is approximately equal to
+$$ \left[ (1-\alpha) - \sqrt{\frac{\alpha(1-\alpha)}{n_{\text{es-cal}}+1}}\cdot \sqrt{2\log(bT)} \right] \cdot \left(1-\frac{1}{b}\right), $$ 
+which displays an asymptotic behaviour similar to that of the bound from \citet{efficiency_first_cp}.
+Further, the  Markov bound is easy to compute numerically and often turns out to be tighter as long as $b$ is moderately large (e.g., $b=100$), as we shall see below.
 Naturally, the same idea can also be applied to bound the coverage of naive conformal prediction sets or intervals output by Algorithm~\ref{alg:naive-multi} or Algorithm~\ref{alg:naive-reg}, respectively.
 
 
 \begin{corollary} \label{prop:naive-class}
-    Assume $(X_1,Y_1), \ldots, (X_n,Y_n), (X_{n+1},Y_{n+1})$ are exchangeable random sample, and let $\hat{C}_{\alpha}^{\textup{naive}}(X_{n+1})$ be the output of Algorithm~\ref{alg:naive-multi}, for any given $\alpha \in (0,1)$. Suppose Algorithm~\ref{alg:naive-multi} is based on a learning algorithm that is invariant to permutations of the training data. Then, for any $b > 1$, letting $l=\lfloor \alpha(n_{\text{es-cal}}+1) \rfloor$, $$\P{Y_{n+1} \in \hat{C}^{\textup{naive}}_{\alpha}(X_{n+1})} \geq I^{-1}\left(\frac{1}{bT}; n_{\text{es-cal}}+1-l,l\right) \cdot (1-1/b).$$
+    Assume $(X_1,Y_1), \ldots, (X_n,Y_n), (X_{n+1},Y_{n+1})$ are exchangeable random sample, and let $\hat{C}_{\alpha}^{\textup{naive}}(X_{n+1})$ be the output of Algorithm~\ref{alg:naive-multi}, for any given $\alpha \in (0,1)$. Then, for any $b > 1$, letting $l=\lfloor \alpha(n_{\text{es-cal}}+1) \rfloor$, $$\P{Y_{n+1} \in \hat{C}^{\textup{naive}}_{\alpha}(X_{n+1})} \geq I^{-1}\left(\frac{1}{bT}; n_{\text{es-cal}}+1-l,l\right) \cdot (1-1/b).$$
 \end{corollary}
 
 
 \begin{corollary}\label{prop:naive-reg}
-Assume $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ are exchangeable random samples, and let $\hat{C}^{\textup{naive}}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:naive-reg}, for any $\alpha \in (0,1)$. Suppose Algorithm~\ref{alg:naive-reg} is based on a learning algorithm that is invariant to permutations of the training data. Then, for any $b > 1$, letting $l=\lfloor \alpha(n_{\text{es-cal}}+1) \rfloor$,
+Assume $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ are exchangeable random samples, and let $\hat{C}^{\textup{naive}}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:naive-reg}, for any $\alpha \in (0,1)$. Then, for any $b > 1$, letting $l=\lfloor \alpha(n_{\text{es-cal}}+1) \rfloor$,
 $$\P{Y_{n+1} \in \hat{C}^{\textup{naive}}_{\alpha}(X_{n+1})} \geq I^{-1}\left(\frac{1}{bT}; n_{\text{es-cal}}+1-l,l\right) \cdot (1-1/b).$$
 \end{corollary}
+
+
 
 
 \noindent \textbf{Hybrid probabilistic bound.}
@@ -272,7 +288,8 @@ In turn, this tends to lead to smaller prediction sets with potentially more sta
 Of course, the downside of these prediction sets is that they can only be guaranteed to provide marginal coverage, although they can sometimes also perform well empirically in terms of label-conditional coverage~\cite{romano2020classification}.
 
 \begin{theorem} \label{thm:class_full_marg}
-Assume $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ are exchangeable random samples, and let $\hat{C}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:class_full_seq_marg}, for any $\alpha \in (0,1)$. Suppose Algorithm~\ref{alg:class_full_seq_marg} is based on a multi-class classifier that is invariant to permutations of the training data. Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
+Assume $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ are exchangeable random samples, and let $\hat{C}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:class_full_seq_marg}, for any $\alpha \in (0,1)$. 
+Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 \end{theorem}
 
 \begin{algorithm}[H]
@@ -423,7 +440,8 @@ This section presents Algorithm~\ref{alg:reg-noempty}, which extends Algorithm~\
 \end{algorithm}
 
 \begin{corollary}\label{thm:reg-noempty}
-Assume $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ are exchangeable random samples, and let $\hat{C}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:reg-noempty}, for any $\alpha \in (0,1)$. Suppose Algorithm~\ref{alg:reg-noempty} calls Algorithm~\ref{alg:reg} based on a regression learning algorithm that is invariant to permutations of the training data. Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
+Assume $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ are exchangeable random samples, and let $\hat{C}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:reg-noempty}, for any $\alpha \in (0,1)$. 
+Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 \end{corollary}
 
 
@@ -564,7 +582,6 @@ This procedure is summarized in Algorithm~\ref{alg:reg-cqr} and it is guaranteed
 \addtocounter{theorem}{1}
 \begin{theorem} \label{thm:reg-cqr}
 Assume $(X_{1},Y_{1}), \ldots, (X_{n+1},Y_{n+1})$ are exchangeable, and let $\hat{C}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:reg-cqr}, as given by~\eqref{eq:reg-int-cqr}, for any given $\alpha \in (0,1)$.
-%Suppose the underlying machine learning algorithm is invariant to permutations of the training data.
 Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 \end{theorem}
 
@@ -596,7 +613,8 @@ As the intervals given by Algorithm~\ref{alg:reg-noempty-cqr} always contain tho
 \end{algorithm}
 
 \begin{corollary}\label{thm:reg-noempty-cqr}
-Assume $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ are exchangeable random samples, and let $\hat{C}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:reg-noempty-cqr}, for any $\alpha \in (0,1)$. Suppose Algorithm~\ref{alg:reg-noempty-cqr} calls Algorithm~\ref{alg:reg-cqr} based on a regression learning algorithm that is invariant to permutations of the training data. Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
+Assume $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ are exchangeable random samples, and let $\hat{C}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:reg-noempty-cqr}, for any $\alpha \in (0,1)$. 
+Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 \end{corollary}
 
 
@@ -885,6 +903,30 @@ The rest of the proof follows the same argument as in the proof of Proposition \
 \end{proof}
 
 
+\begin{proof}[Proof of Lemma~\ref{lemma:asymp}]
+Recall that $l=\lfloor \alpha(n_{\text{es-cal}}+1) \rfloor $, and define the following helpful notations:
+\begin{align*}
+    \text{Beta}\left(n_{\text{es-cal}}+1-l, l  \right) \coloneqq \text{Beta}\left(n_{\text{es-cal}}\cdot c, n_{\text{es-cal}}\cdot d \right), \quad \text{where } c=\frac{n_{\text{es-cal}}+1-l}{n_{\text{es-cal}}}, \quad d=\frac{l}{n_{\text{es-cal}}}.
+\end{align*}
+ Denote $\text{Gamma}(k, \theta)$ as the gamma distribution with shape parameter $k$ and scale parameter $\theta$. It is a well known fact that the beta distribution can be expressed as a ratio of gamma distributions as:
+ \begin{align*}
+     \text{Beta}\left(n_{\text{es-cal}} \cdot c, n_{\text{es-cal}} \cdot d \right) = \frac{\text{Gamma}(n_{\text{es-cal}} \cdot c , 1)}{\text{Gamma}(n_{\text{es-cal}} \cdot c , 1) + \text{Gamma}(n_{\text{es-cal}} \cdot d , 1)}.
+ \end{align*}
+Further, $\text{Gamma}(n_{\text{es-cal}} \cdot c , 1)$ can be seen as the distribution of a sum of $n_{\text{es-cal}} \cdot c$ independent exponentially distributed random variables with mean equal to 1; therefore, by the central limit theorem, $\text{Gamma}(n_{\text{es-cal}} \cdot c , 1)$ has an asymptotic Gaussian distribution as $n_{\text{es-cal}} \rightarrow \infty$. Denote $\Phi(x,\mu,\sigma^2)$ as the cumulative distribution function of a Gaussian random variable with mean $\mu$ and variance $\sigma^2$. Applying the delta method, it follows that, in the limit of large $n_{\text{es-cal}}$,
+\begin{align*}
+     I \left(x;n_{\text{es-cal}}\cdot c, n_{\text{es-cal}}\cdot d \right) = \Phi \left(x; \frac{c}{c+d}, \frac{1}{n_{\text{es-cal}}} \cdot \frac{cd}{(c+d)^3} \right) + O\left( \frac{1}{n_{\text{es-cal}}} \right), \quad \text{for any } x \in [0,1].
+\end{align*}
+Since $I$ and $\Phi$ are continuous and strictly increasing over $[0,1]$, letting $\Phi^{-1}$ be the inverse Gaussian CDF, we have
+\begin{align*}
+    I^{-1} \left(\frac{1}{bT};n_{\text{es-cal}}\cdot c, n_{\text{es-cal}}\cdot d \right) 
+    &= \Phi^{-1} \left(\frac{1}{bT}; \frac{c}{c+d}, \frac{1}{n_{\text{es-cal}}} \cdot \frac{cd}{(c+d)^3} \right) + O\left( \frac{1}{n_{\text{es-cal}}} \right) \\
+    &=\Phi^{-1} \left(\frac{1}{bT};1-\alpha, \frac{\alpha(1-\alpha)}{n_{\text{es-cal}}+1}
+    \right) + O\left( \frac{1}{n_{\text{es-cal}}} \right)\\
+    &=(1-\alpha) + \sqrt{\frac{\alpha(1-\alpha)}{n_{\text{es-cal}}+1}} \cdot \Phi^{-1} \left(\frac{1}{bT}; 0, 1\right) + O\left( \frac{1}{n_{\text{es-cal}}} \right) \\
+    &= (1-\alpha) - \sqrt{\frac{\alpha(1-\alpha)}{n_{\text{es-cal}}+1}}\cdot \sqrt{2\log(bT)} + O\left( \frac{1}{\sqrt{n_{\text{es-cal}}\log(T)}} \right),
+\end{align*}
+where the second equality is obtained by substituting $c$ and $d$ with their defined values  and the last inequality follows from Equation 26.2.23 in \citet{book_a&s} for sufficiently large $T$.
+\end{proof}
 
 %%% Local Variables:
 %%% mode: latex

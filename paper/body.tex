@@ -134,10 +134,10 @@ For simplicity, we assume all scores are almost-surely distinct; otherwise, ties
     \hat{u}_0(Z_{n+1}) = \frac{1 + |i \in \mathcal{D}_{\text{es-cal}}: \hat{S}_{i} \leq \hat{S}_{n+1}|}{1+|\mathcal{D}_{\text{es-cal}}|},
 \end{align}
 making the dependence of $\hat{S}_{i}$ on $Z_{n+1}$ implicit in the interest of space.
-This method, outlined by Algorithm~\ref{alg:od_full_seq} in Appendix~\ref{app:algorithms}, gives p-values that are exactly valid in finite samples, in the sense that they are stochastically dominated by the uniform distribution under the null hypothesis. The only technical requirement is that the learning algorithm should be invariant to permutations of the training data, which is a mild and realistic assumption.
+This method, outlined by Algorithm~\ref{alg:od_full_seq} in Appendix~\ref{app:algorithms}, gives p-values that are exactly valid in finite samples, in the sense that they are stochastically dominated by the uniform distribution under the null hypothesis. 
 
 \begin{theorem}\label{thm:od_full}
-Assume $Z_{1}, \ldots, Z_{n}, Z_{n+1}$ are exchangeable random samples, and let $\hat{u}_0(Z_{n+1})$ be the output of Algorithm~\ref{alg:od_full_seq}, as given in~\eqref{eq:conformal_pval}. Suppose the underlying machine learning algorithm is invariant to permutations of the training data. Then, $\P{\hat{u}_0(Z_{n+1}) \leq \alpha} \leq \alpha$ for any $\alpha \in (0,1)$.
+Assume $Z_{1}, \ldots, Z_{n}, Z_{n+1}$ are exchangeable random samples, and let $\hat{u}_0(Z_{n+1})$ be the output of Algorithm~\ref{alg:od_full_seq}, as given in~\eqref{eq:conformal_pval}. Then, $\P{\hat{u}_0(Z_{n+1}) \leq \alpha} \leq \alpha$ for any $\alpha \in (0,1)$.
 \end{theorem}
 
 
@@ -183,7 +183,6 @@ This method, outlined by Algorithm~\ref{alg:class_full_seq} in Appendix~\ref{app
 
 \begin{theorem}\label{thm:class_full}
 Assume $(X_{1},Y_{1}), \ldots, (X_{n+1},Y_{n+1})$ are exchangeable, and let $\hat{C}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:class_full_seq}, as given in~\eqref{eq:pred-set-class}, for any given $\alpha \in (0,1)$.
-Suppose the underlying machine learning algorithm is invariant to permutations of the training data.
 Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1}) \mid Y_{n+1} = y] \geq 1-\alpha$ for any $y \in [K]$.
 \end{theorem}
 
@@ -257,7 +256,6 @@ This procedure is summarized in Algorithm~\ref{alg:reg} and it is guaranteed to 
 
 \begin{theorem}\label{thm:reg}
 Assume $(X_{1},Y_{1}), \ldots, (X_{n+1},Y_{n+1})$ are exchangeable, and let $\hat{C}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:reg}, as given by~\eqref{eq:reg-int}, for any given $\alpha \in (0,1)$.
-Suppose the underlying machine learning algorithm is invariant to permutations of the training data.
 Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 \end{theorem}
 
