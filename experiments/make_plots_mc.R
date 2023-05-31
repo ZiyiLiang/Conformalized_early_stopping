@@ -43,7 +43,7 @@ make_plot <- function(xmax=2000) {
     mutate(Method = factor(Method, Method.values, Method.labels)) %>%
     mutate(Key = factor(Key, key.values, key.labels))    
   pp <- results_mc %>%
-      filter(Method!='Naive') %>%
+      #filter(Method!='Naive') %>%
     filter(Method != "NA") %>%
     ggplot(aes(x=n_data, y=Value, color=Method, shape=Method)) +
     geom_point(alpha=0.75) +

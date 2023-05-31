@@ -31,7 +31,7 @@ results_oc <- results.raw %>%
   mutate(Key = factor(Key, key.values, key.labels)) %>%
   group_by(Method, batch_size, lr, n_data, n_epoch, Key) %>%
   summarise(num=n(), Value.se = sd(Value, na.rm=T)/sqrt(n()), Value=mean(Value, na.rm=T)) %>%
-  filter(Method!='Naive', lr==0.01, n_epoch==50, n_data!=200)
+  filter(lr==0.01, n_epoch==50, n_data!=200)
 
 
 ## Make nice plots for paper
