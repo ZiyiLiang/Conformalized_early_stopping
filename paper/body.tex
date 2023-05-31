@@ -38,7 +38,7 @@ The paper is organized as follows. Section \ref{sec:ces} develops our {\em confo
 %Section~\ref{app:naive-benchmarks} in the Supplementary Material studies a naive benchmark method which essentially utilizes the same data for early stopping and conformal calibration, simply ignoring the exchangeability issues that our method is designed to overcome. In Section~\ref{app:naive-benchmarks}, we derive a theoretical correction for
 Additional details and results, including a theoretical analysis of the naive benchmark mentioned above, can be found in the Appendices, along with all mathematical proofs.
 
-\subsection*{Related work}
+\subsection*{Related Work}
 
 Conformal inference~\citep{saunders1999transduction,vovk1999machine,vovk2005algorithmic} has become a very rich and active area of research~\cite{lei2013distribution,lei2014distribution,lei2018distribution,barber2019predictive}.
 Many prior works studied the computation of efficient conformal inferences starting from pre-trained {\em black-box} models, including for example in the context of outlier detection~\cite{smith2015conformal,guan2019prediction,bates2021testing,Liang_2022_integrative_p_val}, classification~\cite{vovk2003mondrian,hechtlinger2018cautious,romano2020classification,angelopoulos2020uncertainty,bates2021distributionfree}, and regression \cite{vovk2005algorithmic,lei2014distribution,romano2019conformalized}.
@@ -54,7 +54,7 @@ Finally, this paper draws inspiration from \citet{kim2020predictive}, which show
 
 \section{Methods} \label{sec:ces}
 
-\subsection{Standard conformal inference and early stopping} \label{sec:setup}
+\subsection{Standard Conformal Inference and Early Stopping} \label{sec:setup}
 
 Consider $n$ data points, $Z_i$ for $i \in \mathcal{D} = [n] = \{1,\ldots,n\}$, sampled exchangeably (e.g., i.i.d.)~from an unknown distribution $P_{Z}$ with support on some space $\mathcal{Z}$. Consider also an additional test sample, $Z_{n+1}$. 
 In the context of outlier detection, one wishes to test whether $Z_{n+1}$ was sampled exchangeably from $P_Z$.
@@ -80,7 +80,7 @@ This pipeline requires a three-way data split because: (i) $\mathcal{D}_{\text{t
 \end{figure*}
 
 
-\subsection{Preview of our contribution}
+\subsection{Preview of our Contribution}
 
 This paper develops a novel method to jointly carry out both early stopping and conformal inference using a single hold-out data set, denoted in the following as  $\mathcal{D}_{\text{es-cal}}$. The advantage of this approach is that it allows more samples to be allocated to  $\mathcal{D}_{\text{train}}$.
 This is not a straightforward problem. For example, one cannot naively apply standard conformal inference methods using the same hold-out set $\mathcal{D}_{\text{es-cal}}$ previously used for early stopping, as detailed in Appendix~\ref{app:naive-benchmarks}.
@@ -100,7 +100,7 @@ This concept, illustrated schematically in Figure~\ref{fig:ces_data_splitting}~(
 First, the ground truth for the test point (i.e., its outlier status or its outcome label) is unknown. Second, the method may need to be repeatedly applied for a large number of distinct test points in a computationally efficient way, and one cannot re-train the model separately for each test point.
 In the next section, we will explain how to overcome these challenges in the special case of early stopping for outlier detection; then, the solution will be extended to the classification and regression settings.
 
-\subsection{CES for outlier detection} \label{sec:outlier}
+\subsection{CES for Outlier Detection} \label{sec:outlier}
 
 
 Consider testing whether $Z_{n+1}$, is an {\em inlier}, in the sense that it was sampled from $P_Z$ exchangeably with the data in $\mathcal{D}$.
@@ -144,7 +144,7 @@ Assume $Z_{1}, \ldots, Z_{n}, Z_{n+1}$ are exchangeable random samples, and let 
 
 
 
-\subsection{CES for classification}  \label{sec:classification}
+\subsection{CES for Classification}  \label{sec:classification}
 
 The above CES method will now be extended to deal with $K$-class classification problems, for any $K \geq 2$.
 Consider $n$ exchangeable pairs of observations $(X_i,Y_i)$, for $i \in \mathcal{D} = [n]$, and a test point $(X_{n+1}, Y_{n+1})$ whose label $Y_{n+1} \in [K]$ has not yet been observed. The goal is to construct an informative prediction set for $Y_{n+1}$ given the observed features $X_{n+1}$ and the rest of the data, assuming $(X_{n+1},Y_{n+1})$ is exchangeable with the observations indexed by $\mathcal{D}$.
@@ -187,7 +187,7 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1}) \mid Y_{n+1} = y] \geq 1
 \end{theorem}
 
 
-\subsection{CES for regression} \label{sec:regression}
+\subsection{CES for Regression} \label{sec:regression}
 
 This section extends CES to regression problems with a continuous outcome.
 As in the previous sections, consider a data set containing $n$ exchangeable observations $(X_i,Y_i)$, for $i \in \mathcal{D} = [n]$, and a test point $(X_{n+1}, Y_{n+1})$ with a latent label $Y_{n+1} \in \mathbb{R}$. The goal is to construct a reasonably narrow {\em prediction interval} $\hat{C}_{\alpha}(X_{n+1})$ for $Y_{n+1}$ that is guaranteed to have marginal coverage above some level $1-\alpha$, i.e., $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1}) ] \geq 1-\alpha$, and can also practically achieve reasonably high feature-conditional coverage.
@@ -274,14 +274,14 @@ This approach is outlined by Algorithm~\ref{alg:reg-noempty} in Appendix~\ref{ap
 As the intervals given by Algorithm~\ref{alg:reg-noempty} always contain those output by Algorithm~\ref{alg:reg}, it follows that Algorithm~\ref{alg:reg-noempty} also enjoys guaranteed coverage; see Corollary~\ref{thm:reg-noempty}.
 
 
-\subsection{CES for quantile regression} \label{sec:regression-cqr-short}
+\subsection{CES for Quantile Regression} \label{sec:regression-cqr-short}
 
 The CES method for regression described in Section~\ref{sec:regression} relies on classical nonconformity scores~\cite{vovk2005algorithmic,lei2016RegressionPS} that are not designed to deal efficiently with heteroscedastic data~\cite{romano2019conformalized,sesia2020comparison}.
 However, the idea can be extended to accommodate other nonconformity scores, including those based on quantile regression~\cite{romano2019conformalized}, conditional distributions~\cite{chernozhukov2019distributional,izbicki2019flexible}, or conditional histograms~\cite{sesia2021conformal}.
 The reason why we have so far focused on the classical absolute residual scores is that they are more intuitive to apply in conjunction with an early stopping criterion based on the squared-error loss.
 The extension of the CES method to the conformalized quantile regression (CQR) method of \citet{romano2019conformalized} is developed explicitly in Appendix~\ref{sec:quantile-regression}.
 
-\subsection{Implementation details and computational cost}
+\subsection{Implementation Details and Computational Cost}
 
 Beyond the cost of training the neural network (which is relatively expensive but does not need to be repeated for different test points) and the storage cost associated with saving the candidate models (which we have argued to be feasible in many applications), CES is quite computationally efficient.
 Firstly, CES treats all test points individually and could process them in parallel, although many operations do not need to be repeated. In particular, one can recycle the evaluation of the calibration loss across different test points; e.g., see~\eqref{eq:loss-ces-class}. 
@@ -289,11 +289,11 @@ Thus, the model selection component can be easily implemented at cost $\mathcal{
 
 It is possible that the cost of CES may become a barrier in some applications, particularly if $T$ is very large, despite the slightly more than linear scaling. Hence, we recommend employing moderate values of $T$ (e.g., 100 or 1000).
 
-\section{Numerical experiments} \label{sec:numerical_results}
+\section{Numerical Experiments} \label{sec:numerical_results}
 
 %This section demonstrates the performance of CES in some concrete applications involving outlier detection, multi-class classification, and regression.
 
-\subsection{Outlier detection} \label{sec:num_od}
+\subsection{Outlier Detection} \label{sec:num_od}
 
 The use of CES for outlier detection is demonstrated using the {\em CIFAR10} data set \cite{cifar10}, a collection of 60,000 32-by-32 RGB images from 10 classes including common objects and animals.
 A convolutional neural network with ReLU activation functions is trained on a subset of the data to minimize the cross-entropy loss. The maximum number of epochs is set to be equal to 50.
@@ -324,7 +324,7 @@ Finally, full training is the least powerful competitor for large sample sizes b
 
 Note that Table~\ref{tab:exp_oc} also includes the results obtained with the naive benchmark detailed in Appendix~\ref{app:naive-benchmarks}, applied without the theoretical correction necessary to guarantee marginal coverage. Remarkably, the results show that the naive benchmark performs similarly to the CES method, even though only the latter has the advantage of enjoying rigorous finite-sample guarantees.
 
-\subsection{Multi-class classification} \label{sec:num_mc}
+\subsection{Multi-class Classification} \label{sec:num_mc}
 
 The same {\em CIFAR10} data~\cite{cifar10} are utilized here to demonstrate the performance of CES for a 10-class classification task.
 These experiments are conducted similarly to those in Section~\ref{sec:num_od}. The only difference is that now the soft-max output of the convolutional neural network is translated into conformal prediction sets, as explained in Appendix~\ref{app:class-scores}, instead of conformal p-values.
@@ -363,7 +363,7 @@ Finally, it must be noted that the widths of the prediction intervals output by 
 This naive approach was not taken as a benchmark because it does not guarantee valid coverage, unlike the other methods. Nonetheless, it is interesting to note that the rigorous theoretical properties of the CES method do not come at the expense of a significant loss of power compared to this very aggressive heuristic, and in this sense, one may say that the conformal inferences computed by CES are ``almost free''.
 
 
-\subsection{Quantile regression}
+\subsection{Quantile Regression}
 
 Appendix~\ref{app:numerical-results} contains the results of additional numerical experiments investigating the performance of the CES quantile regression method mentioned in Section~\ref{sec:regression-cqr-short} and explained in Appendix~\ref{sec:quantile-regression}.
 These experiments are carried out using the following publicly available and commonly investigated regression data sets from the UCI Machine Learning repository \cite{Pinar2012}: medical expenditure panel survey number 21 ({\em MEPS\_21}) \cite{meps_21}; blog feedback ({\em blog\_data}) \cite{blog_data}; Tennessee’s student teacher achievement ratio ({\em STAR}) \cite{star}; community and crimes ({\em community}) \cite{community}; physicochemical properties of protein tertiary structure ({\em bio})~\cite{data-bio}; house sales in King County ({\em homes}) \cite{homes}; and hourly and daily counts of rental bikes ({\em bike})~\cite{data-bike}. These data sets were previously also considered by \citet{romano2019conformalized}.

@@ -21,9 +21,9 @@
 
 
 
-\section{Naive early stopping benchmarks} \label{app:naive-benchmarks}
+\section{Naive Early Stopping Benchmarks} \label{app:naive-benchmarks}
 
-\subsection{Detailed implementation of the naive benchmarks}  \label{app:naive-benchmarks-details}
+\subsection{Detailed Implementation of the Naive Benchmarks}  \label{app:naive-benchmarks-details}
 
 We detail here the implementation of the naive benchmark considered in this paper, which consist of performing standard conformal calibration using the same hold-out samples utilized by standard early stopping techniques.
 This does not yield theoretically valid conformal inferences in finite samples because greedily utilizing the same hold-out data set twice, both to evaluate the early stopping criterion and to perform conformal calibration, will break the necessary exchangeability with the test point. Nonetheless, this approach can serve as an informative benchmark and it becomes useful in Appendix~\ref{app:reg-noempty} to extend our rigorous conformalized early stopping method for regression problems in such as way as to explicitly avoid returning empty prediction intervals.
@@ -96,7 +96,7 @@ Note that Algorithm~\ref{alg:naive-multi} also allows for the possibility of com
 
 
 
-\subsection{Theoretical analysis of the naive benchmark} \label{app:naive-analysis}
+\subsection{Theoretical Analysis of the Naive Benchmark} \label{app:naive-analysis}
 
 Although the naive benchmarks described above often perform similarly to CES in practice, they do not enjoy the same desirable theoretical guarantees.
 Nonetheless, we can study their behaviour in sufficient detail as to prove that their inferences are too far from being valid.
@@ -214,7 +214,7 @@ Right: theoretically corrected significance level necessary needed to achieve th
 \end{figure}
 
 
-\section{Main algorithms} \label{app:algorithms}
+\section{Main Algorithms} \label{app:algorithms}
 
 \begin{algorithm}[H]
     \caption{Conformalized early stopping for outlier detection}
@@ -279,7 +279,7 @@ Right: theoretically corrected significance level necessary needed to achieve th
 
 
 
-\section{Classification with marginal coverage} \label{app:class-marg}
+\section{Classification with Marginal Coverage} \label{app:class-marg}
 
 The conformalized early stopping method presented in Section~\ref{sec:classification} can be easily modified to produce prediction sets with marginal rather than label-conditional coverage, as outlined in Algorithm~\ref{alg:class_full_seq_marg}.
 The difference between Algorithm~\ref{alg:class_full_seq}  and Algorithm~\ref{alg:class_full_seq_marg} is that the latter utilizes all calibration data in $\mathcal{D}_{\text{es-cal}}$ to compute each conformal p-value $\hat{u}_y(X_{n+1})$, not only the samples with true label $y$.
@@ -316,7 +316,7 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 \end{algorithm}
 
 
-\section{Review of nonconformity scores for classification} \label{app:class-scores}
+\section{Review of Nonconformity Scores for Classification} \label{app:class-scores}
 
 This section reviews the relevant background on the adaptive nonconformity scores for classification developed by \citet{romano2020classification}.
 For any $x \in \mathcal{X}$ and $y \in [K]$, let $\hat{\pi}_{y}(x)$ denote any (possibly very inaccurate) estimate of the true $\mathbb{P}[ Y = y \mid X =x]$ corresponding to the unknown data-generating distribution. Concretely, a typical choice of $\hat{\pi}$ may be given by the output of the final softmax layer of a neural network classifier, for example.
@@ -361,7 +361,7 @@ This is a desirable property in conformal inference because it leads to statisti
 
 Finally, we conclude this appendix by noting that the nonconformity scores in  Section~\ref{sec:classification} are written as $\hat{S}_i(X_{n+1},y)$, instead of the more compact notation $\hat{S}_i$ adopted here, simply to emphasize that they are computed based on class probabilities $\hat{\pi}$ estimated by a data-driven model $\hat{M}$ that depends on the test features $X_{n+1}$ as well as on the placeholder label $y$ for $Y_{n+1}$.
 
-\section{Efficient computation of the lower envelope} \label{app:lower-envelope}
+\section{Efficient Computation of the Lower Envelope} \label{app:lower-envelope}
 
 This section explains how to implement a computationally efficient divide-and-conquer algorithm for finding the lower envelope of a family of $T$ parabolas or a family of shifted pinball loss functions at cost $\mathcal{O}(T \log T)$ \cite{devillers1995incremental,nielsen1998output}.
 This solution, outlined in Algorithm~\ref{alg:envelope} and Algorithm~\ref{alg:envelope-cqr}, is useful to implement the proposed CES method for regression problems, as detailed in Algorithm~\ref{alg:reg} and Algorithm~\ref{alg:reg-cqr}.
@@ -416,7 +416,7 @@ This solution, outlined in Algorithm~\ref{alg:envelope} and Algorithm~\ref{alg:e
 
 
 
-\section{Avoiding empty predictions in CES for regression} \label{app:reg-noempty}
+\section{Avoiding Empty Predictions in CES for Regression} \label{app:reg-noempty}
 
 This section presents Algorithm~\ref{alg:reg-noempty}, which extends Algorithm~\ref{alg:reg} from Section~\ref{sec:regression} in such a way as to explicitly avoid returning empty prediction intervals.
 
@@ -444,12 +444,12 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 \end{corollary}
 
 
-\section{CES for quantile regression} \label{sec:quantile-regression}
+\section{CES for Quantile Regression} \label{sec:quantile-regression}
 
 A limitation of the CES method for regression described in Section~\ref{sec:regression} is that it is not adaptive to heteroscedasticity because it produces prediction intervals with constant length regardless of the input features \cite{romano2019conformalized}.
 However, this limitation can be easily addressed by extending CES to the conformalized quantile regression (CQR) method of \citet{romano2019conformalized}, which is briefly reviewed below.
 
-\subsection{Review of conformalized quantile regression}
+\subsection{Review of Conformalized Quantile Regression}
 
 This section reviews the relevant background on conditional quantile regression \cite{koenker1978quantreg} and conformalized quantile regression (CQR) \cite{romano2019conformalized}. 
 In contrast to the classical regression models that estimate the conditional mean of the test response $Y_{n+1}$ given the test feature $X_{n+1} = x$, the quantile regression estimates the conditional quantile $q_\beta$ of $Y_{n+1}$ given $X_{n+1} = x$ defined as
@@ -491,7 +491,7 @@ Finally, CQR constructs the prediction interval for the test response value $Y_{
 where $Q_{1-\alpha}(E, \mathcal{I}_2)$ is the $(1-\alpha)(1+\frac{1}{|\mathcal{I}_2|})$-th empirical quantile of $\{E_i: i\in \mathcal{I}_2\}$
 
 
-\subsection{CES for quantile regression}
+\subsection{CES for Quantile Regression}
 
 As in the previous section, consider a data set containing $n$ exchangeable observations $(X_i,Y_i)$, for $i \in \mathcal{D} = [n]$, and a test point $(X_{n+1}, Y_{n+1})$ with a latent label $Y_{n+1} \in \mathbb{R}$. 
 First, the data in $\mathcal{D}$ are randomly split into two subsets, $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$. The data in $\mathcal{D}_{\text{train}}$ are utilized to train a neural network quantile regression model \cite{taylor2000quantile} by seeking to minimize the pinball loss instead of the squared error loss, for each target level $\beta=\beta_{\text{low}}$ and $\beta=\beta_{\text{high}}$ (e.g., $\beta_{\text{low}} = \alpha/2$ and $\beta_{\text{high}}=1-\alpha/2$). Note that the same neural network, with two separate output nodes, can be utilized to estimate conditional quantiles at two different levels; e.g., as in \citet{romano2019conformalized}.
@@ -587,7 +587,7 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 
 
 
-\subsection{Avoiding empty predictions} \label{app:reg-noempty-quantile}
+\subsection{Avoiding Empty Predictions} \label{app:reg-noempty-quantile}
 
 Similarly to Section~\ref{sec:regression}, it is possible (although unlikely) that Algorithm~\ref{alg:reg-cqr} may sometimes produce an empty prediction set.
 Therefore, we presents Algorithm~\ref{alg:reg-noempty-cqr}, which extends Algorithm~\ref{alg:reg-cqr} in such a way as to explicitly avoid returning empty prediction intervals.
@@ -617,7 +617,7 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 \end{corollary}
 
 
-\subsection{Implementation of the naive benchmark}  \label{app:naive-benchmarks-details-cqr}
+\subsection{Implementation of the Naive Benchmark}  \label{app:naive-benchmarks-details-cqr}
 
 \begin{algorithm}[H]
     \caption{Naive conformal quantile regression benchmark with greedy early stopping}
@@ -640,9 +640,9 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 
 \clearpage
 
-\section{Additional results from numerical experiments} \label{app:numerical-results}
+\section{Additional Results from Numerical Experiments} \label{app:numerical-results}
 
-\subsection{Outlier detection, classification, and regression}
+\subsection{Outlier Detection, Classification, and Regression}
 
 \begin{figure}[!htb]
     \centering
@@ -701,7 +701,7 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 
 \FloatBarrier
 
-\subsection{Quantile regression} \label{app:numerical-results-cqr}
+\subsection{Quantile Regression} \label{app:numerical-results-cqr}
 
 We apply the CES quantile regression method extensively to the following publicly available and commonly investigated regression data sets from the UCI Machine Learning repository \cite{Pinar2012}: medical expenditure panel survey number 21 ({\em MEPS\_21}) \cite{meps_21}; blog feedback ({\em blog\_data}) \cite{blog_data}; Tennessee’s student teacher achievement ratio ({\em STAR}) \cite{star}; community and crimes ({\em community}) \cite{community}; physicochemical properties of protein tertiary structure ({\em bio})~\cite{data-bio}; house sales in King County ({\em homes}) \cite{homes}; and hourly and daily counts of rental bikes ({\em bike})~\cite{data-bike}. These data sets were previously also considered by \citet{romano2019conformalized}.
 
@@ -820,7 +820,7 @@ Figure~\ref{fig:exp_qt_regression_homes} summarizes the performance of the four 
 
 \clearpage
 
-\section{Mathematical proofs} \label{appendix:proofs}
+\section{Mathematical Proofs} \label{appendix:proofs}
 
 \begin{proof}[Proof of Theorem \ref{thm:od_full}]
 It suffices to show that the nonconformity scores $\hat{S}_i$ for $i \in \{n+1\}\cup \mathcal{D}_{\text{es-cal}}$ are exchangeable. In fact, if the nonconformity scores are almost-surely unique, this implies the rank of $\hat{S}_{n+1}$ is uniformly distributed over $\{\hat{S}_{i}\}_{i \in \{n+1\}\cup \mathcal{D}_{\text{es-cal}}}$, and in that case the conformal p-value is uniformly distributed over $\{ 1/(1+|\mathcal{D}_{\text{es-cal}}|), 2/(1+|\mathcal{D}_{\text{es-cal}}|), \dots, 1\}$. If the nonconformity scores are not almost-surely unique and ties are not broken at random, then the distribution of the conformal p-value becomes stochastically larger than uniform, in which case the result still holds.
