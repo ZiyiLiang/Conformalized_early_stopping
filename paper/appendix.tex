@@ -35,7 +35,7 @@ Note that Algorithm~\ref{alg:naive-multi} also allows for the possibility of com
     \label{alg:naive-one}
     \begin{algorithmic}[1]
         \STATE \textbf{Input}: Exchangeable data points $Z_1, \ldots, Z_n$; test point $Z_{n+1}$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} One-class classifier trainable via (stochastic) gradient descent.
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
         \STATE Train the one-class classifier for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
@@ -51,7 +51,7 @@ Note that Algorithm~\ref{alg:naive-multi} also allows for the possibility of com
     \begin{algorithmic}[1]
         \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with labels $Y_i \in [K]$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} $K$-class classifier trainable via (stochastic) gradient descent.
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
         \STATE Train the $K$-class classifier for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
@@ -81,7 +81,7 @@ Note that Algorithm~\ref{alg:naive-multi} also allows for the possibility of com
     \begin{algorithmic}[1]
         \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} Regression model trainable via (stochastic) gradient descent.
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
         \STATE Train the regression model for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
@@ -221,7 +221,7 @@ Right: theoretically corrected significance level necessary needed to achieve th
     \label{alg:od_full_seq}
     \begin{algorithmic}[1]
         \STATE \textbf{Input}: Exchangeable data points $Z_1, \ldots, Z_n$; test point $Z_{n+1}$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} One-class classifier trainable via (stochastic) gradient descent.
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
         \STATE Train the one-class classifier for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
@@ -237,7 +237,7 @@ Right: theoretically corrected significance level necessary needed to achieve th
     \begin{algorithmic}[1]
         \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with labels $Y_i \in [K]$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} $K$-class classifier trainable via (stochastic) gradient descent.
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
         \STATE Train the $K$-class classifier for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
@@ -257,7 +257,7 @@ Right: theoretically corrected significance level necessary needed to achieve th
     \begin{algorithmic}[1]
         \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} Regression model trainable via (stochastic) gradient descent.
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
         \STATE Train the regression model for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
@@ -298,7 +298,7 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
     \begin{algorithmic}[1]
         \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with labels $Y_i \in [K]$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} $K$-class classifier trainable via (stochastic) gradient descent.
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
         \STATE Train the $K$-class classifier for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
@@ -426,7 +426,7 @@ This section presents Algorithm~\ref{alg:reg-noempty}, which extends Algorithm~\
     \begin{algorithmic}[1]
         \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} Regression model trainable via (stochastic) gradient descent.
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
         \STATE Train the regression model for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
@@ -460,7 +460,7 @@ This can be formulated as solving the optimization problem:
 \begin{align} \label{eq:reg-quantile_reg}
     \hat{q}_\beta(x) = f(x,\hat{\theta}), \quad \hat{\theta} = \argmin_{\theta}\frac{1}{n}\sum_{i=1}^n \rho_\beta(Y_i, f(X_i, \theta))
 \end{align}
-where $f(x,\theta)$ represents the quantile regression function \cite{koenker1978quantreg} and $\rho_\beta$ is the convex "pinball loss" function \cite{Steinwart2011pinball}, geometrically illustrated in Figure~\ref{fig:pinball_loss} and mathematically defined by
+where $f(x,\theta)$ represents the quantile regression function \cite{koenker1978quantreg} and $\rho_\beta$ is the convex ``pinball loss" function \cite{Steinwart2011pinball}, geometrically illustrated in Figure~\ref{fig:pinball_loss} and mathematically defined by
 \begin{align} \label{eq:reg-pinball_loss}
     \rho_\beta(y, \hat{y}) = \begin{cases}\beta(y - \hat{y}) & \text{if } y - \hat{y} >0, \\
     (1-\beta)(\hat{y} - y) & \text{otherwise} 
@@ -495,7 +495,7 @@ where $Q_{1-\alpha}(E, \mathcal{I}_2)$ is the $(1-\alpha)(1+\frac{1}{|\mathcal{I
 
 As in the previous section, consider a data set containing $n$ exchangeable observations $(X_i,Y_i)$, for $i \in \mathcal{D} = [n]$, and a test point $(X_{n+1}, Y_{n+1})$ with a latent label $Y_{n+1} \in \mathbb{R}$. 
 First, the data in $\mathcal{D}$ are randomly split into two subsets, $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$. The data in $\mathcal{D}_{\text{train}}$ are utilized to train a neural network quantile regression model \cite{taylor2000quantile} by seeking to minimize the pinball loss instead of the squared error loss, for each target level $\beta=\beta_{\text{low}}$ and $\beta=\beta_{\text{high}}$ (e.g., $\beta_{\text{low}} = \alpha/2$ and $\beta_{\text{high}}=1-\alpha/2$). Note that the same neural network, with two separate output nodes, can be utilized to estimate conditional quantiles at two different levels; e.g., as in \citet{romano2019conformalized}.
-For any $t \in [t_{\max}]$, let $M_{\beta, t}$ denote the intermediate neural network model stored after $t$ epochs of stochastic gradient descent, following the same notation as in Section~\ref{sec:regression}.
+For any $t \in [t^{\text{max}}]$, let $M_{\beta, t}$ denote the intermediate neural network model stored after $t$ epochs of stochastic gradient descent, following the same notation as in Section~\ref{sec:regression}.
 For each target level $\beta$ and any $x \in \mathcal{X}$, let $\hat{q}_{\beta, t}(x)$ denote the approximate $\beta-$th conditional quantile of the unknown conditional distribution of $Y \mid X=x$ estimated by $M_{\beta, t}$.
 
 
@@ -520,7 +520,7 @@ Therefore, for any fixed $x$, the quantity in~\eqref{eq:loss-ces-reg-cqr} can be
 \end{figure}
 
 
-After pre-training and storing $T$ candidate models, namely $M_{\beta,t_1}, \ldots, M_{\beta,t_T}$ for some sub-sequence $(t_1, \ldots, t_T)$ of $[t^{\max}]$, consider the following optimization problem,
+After pre-training and storing $T$ candidate models, namely $M_{\beta,t_1}, \ldots, M_{\beta,t_T}$ for some sub-sequence $(t_1, \ldots, t_T)$ of $[t^{\text{max}}]$, consider the following optimization problem,
 \begin{align} \label{eq:ces-model-reg-cqr}
   \hat{M}_{\beta, \text{ces}}(X_{n+1},y) = \argmin_{M_{\beta, t_j} \, : \, 1 \leq j \leq T} \mathcal{L}_{\text{es-cal}}^{+1}(M_{\beta, t_j},X_{n+1},y).
 \end{align}
@@ -533,7 +533,7 @@ In particular, $\hat{M}_{\beta, \text{ces}}(X_{n+1},y)$ is a step function with 
 where $m_{\beta, l}(X_{n+1}) \in [T]$ represents the best model selected within the interval $(k^{\beta}_{l-1}, k^{\beta}_{l}]$ such that $m_{\beta,l}(X_{n+1}) \neq m_{\beta, l-1}(X_{n+1})$ for all $l \in [L]$.
 Above, $k^{\beta}_{1}\leq k^{\beta}_{2} \leq \dots \leq k^{\beta}_{L}$ denote the {\em knots} of $\hat{M}_{\beta, \text{ces}}(X_{n+1},y)$, which also depend on $X_{n+1}$ and are defined as the boundaries in the domain of $y$ between each consecutive pair of steps, with the understanding that $k^{\beta}_0 = -\infty$ and $k^{\beta}_{L+1} = +\infty$; see Figure~\ref{fig:pinball_losses} for a schematic visualization.
 
-After computing $\hat{M}_{\beta, \text{ces}}(X_{n+1},y)$ in~\eqref{eq:ces-model-reg-cqr} for both  $\beta_{\text{low}}$ and $\beta_{\text{high}}$, we concatenate the respective knots $k_1^{\text{low}}, \dots, k^{\text{low}}_{L_1}, k_1^{\text{high}}, \dots, s_{L_2}^{\text{high}}$ and sort them into $k_1 \leq k_2 \leq k_{L_1+L_2}$, so that within each interval $\mathcal{B}_l = (k_{l-1}, k_{l}]$ for step $l \in [L_1 + L_2]$, there exist exactly one best model for $\beta_{\text{low}}$ and exactly one best model for $\beta_{\text{high}}$. 
+After computing $\hat{M}_{\beta, \text{ces}}(X_{n+1},y)$ in~\eqref{eq:ces-model-reg-cqr} for both  $\beta_{\text{low}}$ and $\beta_{\text{high}}$, we concatenate the respective knots $k_1^{\text{low}}, \dots, k^{\text{low}}_{L_1}, k_1^{\text{high}}, \dots, k_{L_2}^{\text{high}}$ and sort them into $k_1 \leq k_2 \leq k_{L_1+L_2}$, so that within each interval $\mathcal{B}_l = (k_{l-1}, k_{l}]$ for step $l \in [L_1 + L_2]$, there exist exactly one best model for $\beta_{\text{low}}$ and exactly one best model for $\beta_{\text{high}}$. 
 Then, for each interval $\mathcal{B}_l = (k_{l-1}, k_{l}]$ associated with step $l \in[L_1 + L_2]$, evaluate the nonconformity score $\hat{E}_i(X_{n+1}, \mathcal{B}_l)$ for all $i \in \mathcal{D}_{\text{es-cal}}$, based on the regression model indicated by $m_{\beta_{\text{low}},l}(X_{n+1})$ and $m_{\beta_{\text{high}},l}(X_{n+1})$; i.e.,
 \begin{align} \label{eq:scores-reg-cqr}
   \hat{E}_i(X_{n+1}, \mathcal{B}_l) = \max\left\{\hat{q}_{m_{\beta_{\text{low}},l}(X_{n+1})}(X_i) - Y_i, Y_i - \hat{q}_{m_{\beta_{\text{high}},l}(X_{n+1})}(X_i)\right\}.
@@ -558,7 +558,7 @@ This procedure is summarized in Algorithm~\ref{alg:reg-cqr} and it is guaranteed
     \begin{algorithmic}[1]
         \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} Quantile regression model trainable via (stochastic) gradient descent. Target quantiles [$\beta_{\text{low}}$, $\beta_{\text{high}}$].
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
         \STATE Train for $t^{\text{max}}$ epochs and save the intermediate models $M_{\beta_{\text{low}}, t_1} , \dots, M_{\beta_{\text{low}}, t_T}$, $M_{\beta_{\text{high}}, t_1} , \dots, M_{\beta_{\text{high}}, t_T}$.
@@ -599,7 +599,7 @@ As the intervals given by Algorithm~\ref{alg:reg-noempty-cqr} always contain tho
     \begin{algorithmic}[1]
         \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} Quantile regression model trainable via (stochastic) gradient descent. Target quantiles [$\beta_{\text{low}}, \beta_{\text{high}}$].
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
         \STATE Train for $t^{\text{max}}$ epochs and save the intermediate models $M_{\beta_{\text{low}}, t_1} , \dots, M_{\beta_{\text{low}}, t_T}$, $M_{\beta_{\text{high}}, t_1} , \dots, M_{\beta_{\text{high}}, t_T}$.
@@ -625,7 +625,7 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
     \begin{algorithmic}[1]
         \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
+        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} Quantile regression model trainable via (stochastic) gradient descent minimizing the pinball loss. 
         \STATE \textcolor{white}{\textbf{Input}:} Target quantiles [$\beta_{\text{low}}, \beta_{\text{high}}$]. 
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.

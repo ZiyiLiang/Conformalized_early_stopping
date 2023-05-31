@@ -41,7 +41,7 @@ Additional details and results, including a theoretical analysis of the naive be
 \subsection*{Related Work}
 
 Conformal inference~\citep{saunders1999transduction,vovk1999machine,vovk2005algorithmic} has become a very rich and active area of research~\cite{lei2013distribution,lei2014distribution,lei2018distribution,barber2019predictive}.
-Many prior works studied the computation of efficient conformal inferences starting from pre-trained {\em black-box} models, including for example in the context of outlier detection~\cite{smith2015conformal,guan2019prediction,bates2021testing,Liang_2022_integrative_p_val}, classification~\cite{vovk2003mondrian,hechtlinger2018cautious,romano2020classification,angelopoulos2020uncertainty,bates2021distributionfree}, and regression \cite{vovk2005algorithmic,lei2014distribution,romano2019conformalized}.
+Many prior works studied the computation of efficient conformal inferences starting from pre-trained {\em black-box} models, including for example in the context of outlier detection~\cite{smith2015conformal,guan2019prediction,Liang_2022_integrative_p_val,bates2021testing}, classification~\cite{vovk2003mondrian,hechtlinger2018cautious,romano2020classification,angelopoulos2020uncertainty,bates2021distributionfree}, and regression \cite{vovk2005algorithmic,lei2014distribution,romano2019conformalized}.
 Other works have studied the general robustness of conformal inferences to distribution shifts~\cite{tibshirani2019conformal,sesia2022conformal} and, more broadly, to failures of the data exchangeability assumption~\cite{barber2022conformal,gibbs2022conformal}.
 Our research is orthogonal, as we look inside the black-box model and develop a novel early-stopping training technique that is naturally integrated with conformal calibration. Nonetheless, the proposed method could be combined with those described in the aforementioned papers.
 Other recent research has explored different ways of bringing conformal inference into the learning algorithms \cite{colombo2020training,bellotti2021optimized,stutz2021learning,einbinder2022training}, and some of those works apply standard early stopping techniques, but they do not address our problem.
@@ -62,12 +62,12 @@ In classification or regression, one can write $Z_i = (X_i, Y_i)$, where $X_i$ i
 
 The standard pipeline begins by randomly splitting the data in $\mathcal{D}$ into three disjoint subsets: $\mathcal{D}_{\text{train}}, \mathcal{D}_{\text{es}}, \mathcal{D}_{\text{cal}} \subset [n]$.
 The samples in $\mathcal{D}_{\text{train}}$ are utilized to train a model $M$ via stochastic gradient descent, in such a way as to (approximately) minimize the desired loss $\mathcal{L}$, while the observations in $\mathcal{D}_{\text{es}}$ and $\mathcal{D}_{\text{cal}}$ are held out.
-We denote by $M_t$ the model learnt after $t$ epochs of stochastic gradient descent, for any $t \in [t_{\max}]$, where $t_{\max}$ is a pre-determined maximum number of epochs. For simplicity, $\mathcal{L}$ is assumed to be an additive loss, in the sense that its value calculated on the training data after $t$ epochs is
+We denote by $M_t$ the model learnt after $t$ epochs of stochastic gradient descent, for any $t \in [t^{\text{max}}]$, where $t^{\text{max}}$ is a pre-determined maximum number of epochs. For simplicity, $\mathcal{L}$ is assumed to be an additive loss, in the sense that its value calculated on the training data after $t$ epochs is
 $\mathcal{L}_{\text{train}}(M_t) = \sum_{i \in \mathcal{D}_{\text{train}}} \ell(M_t; Z_i)$,
 for some appropriate function $\ell$. For example, a typical choice for regression would be the squared-error loss: $\ell(M_t; Z_i) = \left[Y_i - \hat{\mu}(X_i; M_t) \right]^2$, where $\hat{\mu}(X_i; M_t)$ indicates the value of the regression function at $X_i$, as estimated by $M_t$.
 Similarly, the loss evaluated on $\mathcal{D}_{\text{es}}$ is denoted as $\mathcal{L}_{\text{es}}(M_t) = \sum_{i \in \mathcal{D}_{\text{es}}} \ell(M_t; Z_i)$.
-After training for $t_{\max}$ epochs, early stopping selects the model $\hat{M}_{\text{es}}$ that minimizes the loss on $\mathcal{D}_{\text{es}}$:
-$\hat{M}_{\text{es}} = \argmin_{M_t \, : \, 0 \leq t \leq t_{\max}} \mathcal{L}_{\text{es}}(M_t)$.
+After training for $t^{\text{max}}$ epochs, early stopping selects the model $\hat{M}_{\text{es}}$ that minimizes the loss on $\mathcal{D}_{\text{es}}$:
+$\hat{M}_{\text{es}} = \argmin_{M_t \, : \, 0 \leq t \leq t^{\text{max}}} \mathcal{L}_{\text{es}}(M_t)$.
 Conformal calibration of $\hat{M}_{\text{es}}$ is then conducted using the independent hold-out data set $\mathcal{D}_{\text{cal}}$, as sketched in Figure~\ref{fig:ces_data_splitting}~(a).
 This pipeline requires a three-way data split because: (i) $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es}}$ must be disjoint to ensure the early stopping criterion is effective at mitigating overfitting; and (ii) $\mathcal{D}_{\text{cal}}$ must be disjoint from $\mathcal{D}_{\text{train}} \cup \mathcal{D}_{\text{es}}$ to ensure the performance of the selected model $\hat{M}_{\text{es}}$ on the calibration data gives us an unbiased preview of its future performance at test time.
 
@@ -105,15 +105,15 @@ In the next section, we will explain how to overcome these challenges in the spe
 
 Consider testing whether $Z_{n+1}$, is an {\em inlier}, in the sense that it was sampled from $P_Z$ exchangeably with the data in $\mathcal{D}$.
 Following the notation of Section~\ref{sec:setup}, consider a partition of $\mathcal{D}$ into two subsets, $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$, chosen at random independently of everything else, such that $\mathcal{D}=\mathcal{D}_{\text{train}} \cup \mathcal{D}_{\text{es-cal}}$.
-The first step of CES consists of training a deep one-class classifier $M$ using the data in $\mathcal{D}_{\text{train}}$ via stochastic gradient descent for $t^{\max}$ epochs, storing all parameters characterizing the intermediate model after each $\tau$ epochs. We refer to $\tau \in [t^{\max}]$ as the {\em storage period}, a parameter pre-defined by the user.
+The first step of CES consists of training a deep one-class classifier $M$ using the data in $\mathcal{D}_{\text{train}}$ via stochastic gradient descent for $t^{\text{max}}$ epochs, storing all parameters characterizing the intermediate model after each $\tau$ epochs. We refer to $\tau \in [t^{\text{max}}]$ as the {\em storage period}, a parameter pre-defined by the user.
 Intuitively, a smaller $\tau$ increases the memory cost of CES but may also lead to the selection of a more accurate model.
 While the memory cost of this approach is higher compared to that of standard early-stopping training techniques, which only require storing one model at a time, it is not prohibitively expensive.
 In fact, the candidate models do not need to be kept in precious RAM memory but can be stored on a relatively cheap hard drive.
-As reasonable choices of $\tau$ may typically be in the order of $T = \lfloor t^{\max} / \tau \rfloor \approx 100$, the cost of CES is not excessive in many real-world situations.
+As reasonable choices of $\tau$ may typically be in the order of $T = \lfloor t^{\text{max}} / \tau \rfloor \approx 100$, the cost of CES is not excessive in many real-world situations.
 For example, it takes approximately 100 MB to store a pre-trained standard ResNet50 computer vision model, implying that CES would require approximately 10 GB of storage in such applications---today this costs less than \$0.25/month in the cloud.
 
 
-After pre-training and storing $T$ candidate models, namely $M_{t_1}, \ldots, M_{t_T}$ for some sub-sequence $(t_1, \ldots, t_T)$ of $[t^{\max}]$, the next step is to select the appropriate early-stopped model based on the hold-out data in $\mathcal{D}_{\text{es-cal}}$ as well as the test point $Z_{n+1}$.
+After pre-training and storing $T$ candidate models, namely $M_{t_1}, \ldots, M_{t_T}$ for some sub-sequence $(t_1, \ldots, t_T)$ of $[t^{\text{max}}]$, the next step is to select the appropriate early-stopped model based on the hold-out data in $\mathcal{D}_{\text{es-cal}}$ as well as the test point $Z_{n+1}$.
 Following the notation of Section~\ref{sec:setup}, define the value of the one-class classification loss $\mathcal{L}$ for model $M_t$, for any $t \in [T]$, evaluated on $\mathcal{D}_{\text{es-cal}}$ as: $\mathcal{L}_{\text{es-cal}}(M_t) = \sum_{i \in \mathcal{D}_{\text{es-cal}}} \ell(M_t; Z_i)$.
 Further, for any $z \in \mathcal{Z}$, define also $\mathcal{L}_{\text{es-cal}}^{+1}(M_t,z)$ as:
 \begin{align} \label{eq:loss-ces}
@@ -198,11 +198,11 @@ However, similar ideas could also be repurposed to accommodate other scores, suc
 As usual, we randomly split $\mathcal{D}$ into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
 The data in $\mathcal{D}_{\text{train}}$ are utilized to train a neural network via stochastic gradient descent, storing the intermediate models $M_t$ after each $\tau$ epoch.
 The approach is similar to those in Sections~\ref{sec:outlier}--\ref{sec:classification}, although now the output of a model $M_t$ applied to a sample with features $x$ is denoted by $\hat{\mu}_t(x)$ and is designed to approximate (possibly inaccurately) the conditional mean of the unknown data-generating distribution; i.e., $\hat{\mu}_t(x) \approx \E{Y \mid X=x}$. (Note that we will omit the superscript $t$ unless necessary to avoid ambiguity).
-For any model $M_t$ and any $x \in \mathcal{X}$, $y \in [K]$, define
+For any model $M_t$ and any $x \in \mathcal{X}$, $y \in \mathbb{R}$, define
 \begin{align} \label{eq:loss-ces-reg}
   \mathcal{L}_{\text{es-cal}}^{+1}(M_t,x,y)
 %  & = \mathcal{L}_{\text{es-cal}}(M_t) + \ell(M_t; x, y)
-  & = \mathcal{L}_{\text{es-cal}}(M_t) + [y-\hat{\mu}_t(X_{n+1})]^2.
+  & = \mathcal{L}_{\text{es-cal}}(M_t) + [y-\hat{\mu}_t(x)]^2.
 %    =\sum_{i\in \mathcal{D}_{\text{es-cal}}} [y_i-\hat{\mu}_t(X_i)]^2 + [y-\hat{\mu}_t(X_{n+1})]^2.
 \end{align}
 Consider now the following optimization problem,
@@ -261,12 +261,12 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 
 The intuition behind the above method is as follows.
 Each intermediate interval $\hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l)$, for $l \in [L]$, may be thought of as being computed by applying, under the null hypothesis that $Y_{n+1} \in \mathcal{B}_l$, the classification method from Section~\ref{sec:classification} for a discretized version of our problem based on the partition $\{\mathcal{B}_l\}_{l=1}^{L}$. Then, leveraging the classical duality between confidence intervals and p-values, it becomes clear that taking the intersection of $\mathcal{B}_l$ and $\hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l)$ essentially amounts to including the ``label'' $\mathcal{B}_l$ in the output prediction if the null hypothesis $Y_{n+1} \in \mathcal{B}_l$ cannot be rejected.
-The purpose of the final convex hull operation is to CES outputs a contiguous prediction interval, which is what we originally stated to seek.
+The purpose of the final convex hull operation is to generate a contiguous prediction interval, which is what we originally stated to seek.
 %for the sake of interpretability.
 %In fact, while non-convex prediction sets may be desirable in certain applications \cite{izbicki2020cd}, contiguous intervals are often easier for practitioners to interpret in a regression setting~\cite{sesia2021conformal}.
 
 One may intuitively be concerned that this method may output excessively wide prediction interval if the location of $\{\mathcal{B}_l \cap \hat{C}_\alpha(X_{n+1}, \mathcal{B}_l)\}$ is extremely large in absolute value.
-However, our numerical experiments will demonstrate that, as long as the number of calibration data points is not too small, the selected models typically give predictions that are reasonably concentrated around the true test response regardless of the placeholder value $y$. Therefore, the interval $\hat{C}_\alpha(X_{n+1}, \mathcal{B}_l)$ tends to be concentrated around the true $y$ even if $\mathcal{B}_l$ is far away, in which case $\hat{C}_\alpha(X_{n+1}, \mathcal{B}_l) \cap \mathcal{B}_l = \emptyset$ does not expand the final prediction interval $\hat{C}_\alpha(X_{n+1})$.
+However, our numerical experiments will demonstrate that, as long as the number of calibration data points is not too small, the selected models in general provide reasonably concentrated predictions around the true test response regardless of the placeholder value $y$. Therefore, the interval $\hat{C}_\alpha(X_{n+1}, \mathcal{B}_l)$ tends to be close to the true $y$ even if $\mathcal{B}_l$ is far away, in which case $\hat{C}_\alpha(X_{n+1}, \mathcal{B}_l) \cap \mathcal{B}_l = \emptyset$ does not expand the final prediction interval $\hat{C}_\alpha(X_{n+1})$.
 
 
 Although it is unlikely, Algorithm~\ref{alg:reg} may sometimes produce an empty set, which is an uninformative and potentially confusing output. A simple solution consists of replacing any empty output with the naive conformal prediction interval computed by Algorithm~\ref{alg:naive-reg} in Appendix~\ref{app:naive-benchmarks}, which leverages an early-stopped model selected by looking at the original calibration data set without the test point.
@@ -277,7 +277,7 @@ As the intervals given by Algorithm~\ref{alg:reg-noempty} always contain those o
 \subsection{CES for Quantile Regression} \label{sec:regression-cqr-short}
 
 The CES method for regression described in Section~\ref{sec:regression} relies on classical nonconformity scores~\cite{vovk2005algorithmic,lei2016RegressionPS} that are not designed to deal efficiently with heteroscedastic data~\cite{romano2019conformalized,sesia2020comparison}.
-However, the idea can be extended to accommodate other nonconformity scores, including those based on quantile regression~\cite{romano2019conformalized}, conditional distributions~\cite{chernozhukov2019distributional,izbicki2019flexible}, or conditional histograms~\cite{sesia2021conformal}.
+However, the idea can be extended to accommodate other nonconformity scores, including those based on quantile regression~\cite{romano2019conformalized}, conditional distributions~\cite{izbicki2019flexible, chernozhukov2019distributional}, or conditional histograms~\cite{sesia2021conformal}.
 The reason why we have so far focused on the classical absolute residual scores is that they are more intuitive to apply in conjunction with an early stopping criterion based on the squared-error loss.
 The extension of the CES method to the conformalized quantile regression (CQR) method of \citet{romano2019conformalized} is developed explicitly in Appendix~\ref{sec:quantile-regression}.
 
