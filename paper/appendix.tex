@@ -713,6 +713,7 @@ Again, the performance of each method is measured in terms of marginal coverage,
 
 
 Figure~\ref{fig:exp_qt_regression_homes} summarizes the performance of the four alternative methods on the {\em homes} data, as a function of the total sample size; The error bar corresponding to standard errors are plotted around each data point. These results show that all methods reach 90\% marginal coverage in practice, as anticipated by the mathematical guarantees, although the theoretical correction for the naive early stopping method appears to be overly conservative. Full training, though producing the smallest prediction bands, has very low conditional coverage, which indicates that fully trained neural network models can suffer from overfitting and therefore is not appealing. Data splitting method beats full training as it gives higher approximated conditional coverage, and CES further beats data splitting in terms of conditional coverage, meanwhile producing prediction intervals of similar length as data splitting. These patterns hold true in general for additional data sets, as illustrated by Figures~\ref{fig:exp_qt_regression_community}--\ref{fig:exp_qt_regression_bike} and by Tables~\ref{tab:exp_qt_regression_homes_tab}--\ref{tab:exp_qt_regression_bike_tab}.
+Tables~\ref{tab:exp_qt_regression_homes_tab}--\ref{tab:exp_qt_regression_bike_tab} also include the results obtained with the naive benchmark applied without the necessary theoretical correction, which performs similarly to CES.
 
 
 \begin{figure}[!htb]
