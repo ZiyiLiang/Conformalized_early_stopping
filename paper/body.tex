@@ -7,8 +7,8 @@ Early stopping based on hold-out data is a popular regularization technique desi
 
 Deep neural networks can detect complex data patterns and leverage them to make accurate predictions in many applications, including computer vision, natural language processing, and speech recognition, to name a few examples.
 These models can sometimes even outperform skilled humans~\cite{silver2016mastering}, but they still make mistakes.
-Unfortunately, the severity of these mistakes is compounded by the fact that neural networks are often prone to overfitting and may become overconfident~\cite{guo2017calibration}.
-Several training strategies have been developed to mitigate overconfidence, including dropout \citep{srivastava2014dropout}, batch normalization~\cite{ioffe2015batch}, weight normalization~\cite{salimans2016weight}, data augmentation~\cite{shorten2019survey}, and early stopping \citep{PRECHELT1997}; the latter is the focus of this paper.
+Unfortunately, the severity of these mistakes is compounded by the fact that the predictions computed by neural networks are often overconfident~\cite{guo2017calibration}, partly due to overfitting~\citep{thulasidasan2019mixup,ovadia2019can}.
+Several training strategies have been developed to mitigate overfitting, including dropout \citep{srivastava2014dropout}, batch normalization~\cite{ioffe2015batch}, weight normalization~\cite{salimans2016weight}, data augmentation~\cite{shorten2019survey}, and early stopping \citep{PRECHELT1997}; the latter is the focus of this paper.
 
 Early stopping consists of continuously evaluating after each batch of stochastic gradient updates (or {\em epoch}) the predictive performance of the current model on {\em hold-out} independent data.
 After a large number of gradient updates, only the intermediate model achieving the best performance on the hold-out data is utilized to make predictions.
@@ -47,7 +47,7 @@ Our research is orthogonal, as we look inside the black-box model and develop a 
 Other recent research has explored different ways of bringing conformal inference into the learning algorithms \cite{colombo2020training,bellotti2021optimized,stutz2021learning,einbinder2022training}, and some of those works apply standard early stopping techniques, but they do not address our problem.
 
 This paper is related to \citet{efficiency_first_cp}, which proposed a general theoretical adjustment for conformal inferences computed after model selection. That method could be utilized to account for early stopping without further data splits, as detailed in Appendix~\ref{app:naive-benchmarks}. However, we will demonstrate that even an improved version of such analysis remains overly conservative in the context of model selection via early stopping, and the alternative method developed in this paper performs much better in practice.
-Our solution is inspired by \citet{Liang_2022_integrative_p_val}, which deals with the problem of selecting the best model from an arbitrary machine learning toolbox  to obtain the most powerful conformal p-values for outlier testing. The idea of \citet{Liang_2022_integrative_p_val} extends naturally to the early stopping problem in the special cases of outlier detection and classification, but the regression setting requires substantial technical innovations.
+Our solution is inspired by Mondrian conformal inference~\citep{vovk2003mondrian} as well as by the integrative conformal method of \citet{Liang_2022_integrative_p_val}. The latter deals with the problem of selecting the best model from an arbitrary machine learning toolbox  to obtain the most powerful conformal p-values for outlier testing. The idea of \citet{Liang_2022_integrative_p_val} extends naturally to the early stopping problem in the special cases of outlier detection and classification, but the regression setting requires substantial technical innovations.
 The work of \citet{Liang_2022_integrative_p_val} is also related to \citet{marandon2022machine}, although the latter is more distant from this paper because it focuses on theoretically controlling the false discovery rate~\cite{benjamini1995controlling}  in multiple testing problems.
 Finally, this paper draws inspiration from \citet{kim2020predictive}, which shows that machine learning models trained with bootstrap (or bagging) techniques can also lead to valid conformal inferences essentially for free.
 
@@ -90,7 +90,7 @@ As explained in Appendix~\ref{app:naive-analysis}, it is possible to correct con
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=\linewidth]{figures/exp_regression_bio_small.pdf}\vspace{-0.5cm}
-    \caption{Average performance, as a function of the sample size, of conformal inferences based on neural networks trained and calibrated with different methods, on the {\em bio} regression data~\cite{data-bio}. Ideally, the coverage of the conformal prediction intervals should be close to 90\% and their width should be small. All methods shown here guarantee 90\% marginal coverage. }
+    \caption{Average performance, as a function of the sample size, of conformal inferences based on neural networks trained and calibrated with different methods, on the {\em bio} regression data~\cite{data-bio}. Ideally, the coverage of the conformal prediction intervals should be close to 90\% and their width should be small. All methods shown here guarantee 90\% marginal coverage. See Table~\ref{tab:exp_regression_bio} for more detailed results and standard errors.}
     \label{fig:exp_regression_bio}
 \end{figure}
 
@@ -277,10 +277,17 @@ As the intervals given by Algorithm~\ref{alg:reg-noempty} always contain those o
 \subsection{CES for quantile regression} \label{sec:regression-cqr-short}
 
 The CES method for regression described in Section~\ref{sec:regression} relies on classical nonconformity scores~\cite{vovk2005algorithmic,lei2016RegressionPS} that are not designed to deal efficiently with heteroscedastic data~\cite{romano2019conformalized,sesia2020comparison}.
-However, the general idea can be extended to accommodate virtually any other type of nonconformity score, including existing options based on quantile regression~\cite{romano2019conformalized}, conditional distributions~\cite{chernozhukov2019distributional,izbicki2019flexible}, or conditional histograms~\cite{sesia2021conformal}.
+However, the idea can be extended to accommodate other nonconformity scores, including those based on quantile regression~\cite{romano2019conformalized}, conditional distributions~\cite{chernozhukov2019distributional,izbicki2019flexible}, or conditional histograms~\cite{sesia2021conformal}.
 The reason why we have so far focused on the classical absolute residual scores is that they are more intuitive to apply in conjunction with an early stopping criterion based on the squared-error loss.
 The extension of the CES method to the conformalized quantile regression (CQR) method of \citet{romano2019conformalized} is developed explicitly in Appendix~\ref{sec:quantile-regression}.
 
+\subsection{Implementation details and computational cost}
+
+Beyond the cost of training the neural network (which is relatively expensive but does not need to be repeated for different test points) and the storage cost associated with saving the candidate models (which we have argued to be feasible in many applications), CES is quite computationally efficient.
+Firstly, CES treats all test points individually and could process them in parallel, although many operations do not need to be repeated. In particular, one can recycle the evaluation of the calibration loss across different test points; e.g., see~\eqref{eq:loss-ces-class}. 
+Thus, the model selection component can be easily implemented at cost $\mathcal{O}((n_{\text{es-cal}} + n_{\text{test}}) \cdot T + n_{\text{test}} \cdot n_{\text{es-cal}})$ for classification (of which outlier detection is a special case) and $\mathcal{O}((n_{\text{es-cal}} + n_{\text{test}}) \cdot T \cdot \log T + n_{\text{test}} \cdot n_{\text{es-cal}})$ for regression, where $n_{\text{es-cal}} = |\mathcal{D}_{\text{es-cal}}|$ and $T$ is the number of candidate models. Note that the $T \cdot \log T$ dependence in the regression setting comes from the divide-and-conquer algorithm explained in Appendix~\ref{app:lower-envelope}.
+
+It is possible that the cost of CES may become a barrier in some applications, particularly if $T$ is very large, despite the slightly more than linear scaling. Hence, we recommend employing moderate values of $T$ (e.g., 100 or 1000).
 
 \section{Numerical experiments} \label{sec:numerical_results}
 
@@ -306,7 +313,7 @@ All results are averaged over 100 trials based on independent data subsets.
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=\linewidth]{figures/exp_oc.pdf}\vspace{-0.5cm}
-    \caption{Average performance, as a function of the sample size, of conformal inferences for outlier detection based on neural networks trained and calibrated with different methods, on the {\em CIFAR10} data~\cite{cifar10}. Ideally, the TPR should be as large as possible while maintaining the FPR below 0.1.}% All methods shown here guarantee 10\% FPR. }
+    \caption{Average performance, as a function of the sample size, of conformal inferences for outlier detection based on neural networks trained and calibrated with different methods, on the {\em CIFAR10} data~\cite{cifar10}. Ideally, the TPR should be as large as possible while maintaining the FPR below 0.1. See Table~\ref{tab:exp_oc} for more detailed results and standard errors.}% All methods shown here guarantee 10\% FPR. }
     \label{fig:exp_oc}
 \end{figure}
 
@@ -314,6 +321,8 @@ Figure~\ref{fig:exp_oc} summarizes the performance of the four methods as a func
 The increased power of CES compared to data splitting is not surprising, as the latter relies on a less accurate model trained on less data.
 By contrast, the naive benchmark trains a model more similar to that of CES, but its TPR is not as high because the theoretical correction for the naive conformal p-values is overly pessimistic.
 Finally, full training is the least powerful competitor for large sample sizes because its underlying model becomes more and more overconfident as the training set grows.
+
+Note that Table~\ref{tab:exp_oc} also includes the results obtained with the naive benchmark detailed in Appendix~\ref{app:naive-benchmarks}, applied without the theoretical correction necessary to guarantee marginal coverage. Remarkably, the results show that the naive benchmark performs similarly to the CES method, even though only the latter has the advantage of enjoying rigorous finite-sample guarantees.
 
 \subsection{Multi-class classification} \label{sec:num_mc}
 
@@ -324,14 +333,14 @@ The CES method is compared to the same three benchmarks adopted in Section~\ref{
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=\linewidth]{figures/exp_mc.pdf}\vspace{-0.5cm}
-    \caption{Average performance, as a function of the sample size, of conformal prediction sets for multi-class classification based on neural networks trained and calibrated with different methods, on the {\em CIFAR10} data~\cite{cifar10}. Ideally, the coverage should be close to 90\% and the cardinality should be small.}
+    \caption{Average performance, as a function of the sample size, of conformal prediction sets for multi-class classification based on neural networks trained and calibrated with different methods, on the {\em CIFAR10} data~\cite{cifar10}. Ideally, the coverage should be close to 90\% and the cardinality should be small. See Table~\ref{tab:exp_mc} for more detailed results and standard errors.}
     \label{fig:exp_mc}
 \end{figure}
 
-Figure \ref{fig:exp_mc} summarizes the results averaged over 100 independent realizations of these experiments, while Table~\ref{tab:exp_mc} in Appendix~\ref{app:numerical-results} reports on the corresponding standard errors.
+Figure \ref{fig:exp_mc} summarizes the results averaged over 100 independent realizations of these experiments, while Table~\ref{tab:exp_mc} in Appendix~\ref{app:numerical-results} reports on the corresponding standard errors. 
 While all approaches always achieve the nominal coverage level, the CES method is able to do so with the smallest, and hence most informative, prediction sets.
 As before, the more disappointing performance of the data splitting benchmark can be explained by the more limited amount of data available for training, that of the naive benchmark by the excessive conservativeness of its theoretical correction, and that of the full training benchmark by overfitting.
-
+Note that Table~\ref{tab:exp_mc} also includes the results obtained with the naive benchmark without the theoretical correction, which again performs similarly to CES.
 
 \subsection{Regression}
 
@@ -348,6 +357,7 @@ The performance of each method is measured in terms of marginal coverage, worst-
 Figure~\ref{fig:exp_regression_bio} summarizes the performance of the four alternative methods on the {\em bio} data, as a function of the total sample size;  see Table~\ref{fig:exp_regression_bike} in Appendix~\ref{app:numerical-results} for the corresponding standard errors. These results show that all methods reach 90\% marginal coverage in practice, as anticipated by the mathematical guarantees, although the theoretical correction for the naive early stopping method appears to be overly conservative. The CES method clearly performs best, in the sense that it leads to the shortest prediction intervals while also achieving approximately valid conditional coverage. By contrast, the conformal prediction intervals obtained without early stopping have significantly lower conditional coverage, which is consistent with the prior intuition that fully trained neural networks can sometimes suffer from overfitting.
 More detailed results from these experiments can be found in Table~\ref{tab:exp_regression_bio} in Appendix~\ref{app:numerical-results}.
 Analogous results corresponding to the {\em bike} and {\em concrete} data sets can be found in Figures~\ref{fig:exp_regression_bike}--\ref{fig:exp_regression_concrete} and Tables~\ref{tab:exp_regression_bike}--\ref{tab:exp_regression_concrete} in Appendix~\ref{app:numerical-results}.
+Tables~\ref{tab:exp_regression_bio}--\ref{tab:exp_regression_concrete} also include the results obtained with the naive benchmark applied without the necessary theoretical correction, which performs similarly to CES.
 
 Finally, it must be noted that the widths of the prediction intervals output by the CES method in these experiments are very similar to those of the corresponding intervals produced by naively applying early stopping without data splitting and without the theoretical correction described in Appendix~\ref{app:naive-benchmarks}.
 This naive approach was not taken as a benchmark because it does not guarantee valid coverage, unlike the other methods. Nonetheless, it is interesting to note that the rigorous theoretical properties of the CES method do not come at the expense of a significant loss of power compared to this very aggressive heuristic, and in this sense, one may say that the conformal inferences computed by CES are ``almost free''.
@@ -362,11 +372,11 @@ The results demonstrate that the CES method compares favorably, in terms of the 
 
 \section{Discussion} \label{sec:discussion}
 
-This paper has focused on early stopping and conformal calibration because these are two popular techniques designed to mitigate overconfidence that were previously combined  inefficiently, but the relevance of our methodology is much more general.
-In fact, similar ideas have already been utilized in the context of outlier detection to tune hyper-parameters and select the most promising candidate from an arbitrary toolbox of machine learning models \cite{Liang_2022_integrative_p_val}.
-The techniques developed in this paper, however, also allow one to calibrate, without further data splits, the most promising model selected in a data-driven way from an arbitrary machine learning toolbox in the context of multi-class classification and regression.
+This paper has focused on early stopping and conformal calibration because these are two popular techniques, respectively designed to mitigate overfitting and reduce overconfidence, that were previously combined without much thought. However, the relevance of our methodology extends well beyond the problem considered in this paper.
+In fact, related ideas have already been utilized in the context of outlier detection to tune hyper-parameters and select the most promising candidate from an arbitrary toolbox of machine learning models \cite{Liang_2022_integrative_p_val}.
+The techniques developed in this paper also allow one to calibrate, without further data splits, the most promising model selected in a data-driven way from an arbitrary machine learning toolbox in the context of multi-class classification and regression.
 
-As detailed in Appendix~\ref{app:naive-benchmarks}, the naive benchmark that uses the same hold-out data twice, both for standard early stopping and standard conformal calibration, is not theoretically valid without conservative corrections. Nonetheless, we have observed this naive approach often performs similarly to CES in practice.
+As detailed in Appendix~\ref{app:naive-benchmarks}, the naive benchmark that uses the same hold-out data twice, both for standard early stopping and standard conformal calibration, is not theoretically valid without conservative corrections. Nonetheless, our numerical experiments have shown that this naive approach often performs similarly to CES in practice.
 Of course, the naive benchmark may sometimes fail, and thus we would advise practitioners to apply the theoretically principled CES whenever its additional memory costs are not prohibitive. However, the empirical evidence suggests the naive benchmark may not be a completely unreasonable heuristic when CES is not applicable.
 
 
@@ -377,6 +387,7 @@ Software implementing the algorithms and data experiments are available online a
 \subsection*{Acknowledgements}
 %Z.~L.~ is supported by 
 The authors thank the Center for Advanced Research Computing at the University of Southern California for providing computing resources to carry out numerical experiments.
+The authors are also grateful to three anonymous reviewers for their insightful comments and suggestions.
 M.~S. and Y.~Z.~are supported by NSF grant DMS 2210637.
 M.~S.~is also supported by an Amazon Research Award. 
 

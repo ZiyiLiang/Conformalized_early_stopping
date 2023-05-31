@@ -49,7 +49,7 @@ Note that Algorithm~\ref{alg:naive-multi} also allows for the possibility of com
     \caption{Naive conformal multi-class classification benchmark with greedy early stopping}
     \label{alg:naive-multi}
     \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with labels $Y_i \in [K]$.
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with labels $Y_i \in [K]$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
         \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} $K$-class classifier trainable via (stochastic) gradient descent.
@@ -79,7 +79,7 @@ Note that Algorithm~\ref{alg:naive-multi} also allows for the possibility of com
     \caption{Naive conformal regression benchmark with greedy early stopping}
     \label{alg:naive-reg}
     \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with outcomes $Y_i \in \mathbb{R}$.
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
         \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} Regression model trainable via (stochastic) gradient descent.
@@ -235,7 +235,7 @@ Right: theoretically corrected significance level necessary needed to achieve th
     \caption{Conformalized early stopping for multi-class classification}
     \label{alg:class_full_seq}
     \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with labels $Y_i \in [K]$.
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with labels $Y_i \in [K]$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
         \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} $K$-class classifier trainable via (stochastic) gradient descent.
@@ -255,7 +255,7 @@ Right: theoretically corrected significance level necessary needed to achieve th
     \caption{Conformalized early stopping for regression}
     \label{alg:reg}
     \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with outcomes $Y_i \in \mathbb{R}$.
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
         \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} Regression model trainable via (stochastic) gradient descent.
@@ -296,7 +296,7 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
     \caption{Conformalized early stopping for multi-class classification with marginal coverage}
     \label{alg:class_full_seq_marg}
     \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with labels $Y_i \in [K]$.
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with labels $Y_i \in [K]$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
         \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} $K$-class classifier trainable via (stochastic) gradient descent.
@@ -366,7 +366,6 @@ Finally, we conclude this appendix by noting that the nonconformity scores in  S
 This section explains how to implement a computationally efficient divide-and-conquer algorithm for finding the lower envelope of a family of $T$ parabolas or a family of shifted pinball loss functions at cost $\mathcal{O}(T \log T)$ \cite{devillers1995incremental,nielsen1998output}.
 This solution, outlined in Algorithm~\ref{alg:envelope} and Algorithm~\ref{alg:envelope-cqr}, is useful to implement the proposed CES method for regression problems, as detailed in Algorithm~\ref{alg:reg} and Algorithm~\ref{alg:reg-cqr}.
 
-%\todoyanfei[inline]{Study the relevant background from \cite{devillers1995incremental,nielsen1998output} and write Algorithm~\ref{alg:envelope}.}
 
 \begin{algorithm}[H]
     \caption{Divide-and-conquer algorithm for finding the lower envelope of many parabolas}
@@ -425,7 +424,7 @@ This section presents Algorithm~\ref{alg:reg-noempty}, which extends Algorithm~\
     \caption{Conformalized early stopping for regression, avoiding empty predictions}
     \label{alg:reg-noempty}
     \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with outcomes $Y_i \in \mathbb{R}$.
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
         \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} Regression model trainable via (stochastic) gradient descent.
@@ -557,7 +556,7 @@ This procedure is summarized in Algorithm~\ref{alg:reg-cqr} and it is guaranteed
     \caption{Conformalized early stopping for quantile regression}
     \label{alg:reg-cqr}
     \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with outcomes $Y_i \in \mathbb{R}$.
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
         \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} Quantile regression model trainable via (stochastic) gradient descent. Target quantiles [$\beta_{\text{low}}$, $\beta_{\text{high}}$].
@@ -598,7 +597,7 @@ As the intervals given by Algorithm~\ref{alg:reg-noempty-cqr} always contain tho
     \caption{Conformalized early stopping for quantile regression, avoiding empty predictions}
     \label{alg:reg-noempty-cqr}
     \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with outcomes $Y_i \in \mathbb{R}$.
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
         \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} Quantile regression model trainable via (stochastic) gradient descent. Target quantiles [$\beta_{\text{low}}, \beta_{\text{high}}$].
@@ -624,7 +623,7 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
     \caption{Naive conformal quantile regression benchmark with greedy early stopping}
     \label{alg:naive-reg-cqr}
     \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n}), (X_{n+1},Y_{n+1})$ with outcomes $Y_i \in \mathbb{R}$.
+        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
         \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\max}$; storage period hyper-parameter $\tau$.
         \STATE \textcolor{white}{\textbf{Input}:} Quantile regression model trainable via (stochastic) gradient descent minimizing the pinball loss. 
@@ -648,14 +647,14 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.8\linewidth]{figures/exp_regression_bike.pdf}
-    \caption{Performance of conformal prediction intervals based on regression models trained with different methods, on the {\em bike} data set~\cite{data-bike}. The results are shown as a function of the total sample size. The nominal marginal coverage level is 90\%. See Table~\ref{fig:exp_regression_bike} for standard errors.}
+    \caption{Performance of conformal prediction intervals based on regression models trained with different methods, on the {\em bike} data set~\cite{data-bike}. The results are shown as a function of the total sample size. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_regression_bike} for additional details and standard errors.}
     \label{fig:exp_regression_bike}
 \end{figure}
 
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.8\linewidth]{figures/exp_regression_concrete.pdf}
-    \caption{Performance of conformal prediction intervals based on regression models trained with different methods, on the {\em concrete} data set~\cite{data-concrete}. The results are shown as a function of the total sample size. The nominal marginal coverage level is 90\%. See Table~\ref{fig:exp_regression_concrete} for standard errors.}
+    \caption{Performance of conformal prediction intervals based on regression models trained with different methods, on the {\em concrete} data set~\cite{data-concrete}. The results are shown as a function of the total sample size. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_regression_concrete} for additional details and standard errors.}
     \label{fig:exp_regression_concrete}
 \end{figure}
 
@@ -719,7 +718,7 @@ Figure~\ref{fig:exp_qt_regression_homes} summarizes the performance of the four 
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.8\linewidth]{figures/exp_qt_regression_homes.pdf}\vspace{-0.5cm}
-    \caption{Average performance, as a function of the sample size, of conformal prediction sets for quantile regression based on neural networks trained and calibrated with different methods, on the {\em homes} data~\cite{homes}. The marginal coverage is theoretically guaranteed to be above 90\%. Ideally, the conditional coverage should high and the prediction intervals should be tight.}
+    \caption{Average performance, as a function of the sample size, of conformal prediction sets for quantile regression based on neural networks trained and calibrated with different methods, on the {\em homes} data~\cite{homes}. The marginal coverage is theoretically guaranteed to be above 90\%. Ideally, the conditional coverage should high and the prediction intervals should be tight. See Table~\ref{tab:exp_qt_regression_homes_tab} for additional details and standard errors.}
     \label{fig:exp_qt_regression_homes}
 \end{figure}
 
@@ -727,42 +726,42 @@ Figure~\ref{fig:exp_qt_regression_homes} summarizes the performance of the four 
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.8\linewidth]{figures/exp_qt_regression_community.pdf}
-    \caption{Performance of conformal prediction intervals based on quantile regression models trained with different methods, on the {\em community} data set~\cite{community}. The results are shown as a function of the total sample size with error bars corresponding to standard error. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_qt_regression_community_tab} for more details.}
+    \caption{Performance of conformal prediction intervals based on quantile regression models trained with different methods, on the {\em community} data set~\cite{community}. The results are shown as a function of the total sample size with error bars corresponding to standard error. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_qt_regression_community_tab} for additional details and standard errors.}
     \label{fig:exp_qt_regression_community}
 \end{figure}
 
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.8\linewidth]{figures/exp_qt_regression_bio.pdf}
-    \caption{Performance of conformal prediction intervals based on quantile regression models trained with different methods, on the {\em bio} data set~\cite{data-bio}. The results are shown as a function of the total sample size with error bars corresponding to standard error. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_qt_regression_bio_tab} for more details.}
+    \caption{Performance of conformal prediction intervals based on quantile regression models trained with different methods, on the {\em bio} data set~\cite{data-bio}. The results are shown as a function of the total sample size with error bars corresponding to standard error. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_qt_regression_bio_tab} for additional details and standard errors.}
     \label{fig:exp_qt_regression_bio}
 \end{figure}
 
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.8\linewidth]{figures/exp_qt_regression_meps_21.pdf}
-    \caption{Performance of conformal prediction intervals based on quantile regression models trained with different methods, on the {\em meps\_21} data set~\cite{meps_21}.The results are shown as a function of the total sample size with error bars corresponding to standard error. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_qt_regression_meps_21_tab} for more details.}
+    \caption{Performance of conformal prediction intervals based on quantile regression models trained with different methods, on the {\em meps\_21} data set~\cite{meps_21}.The results are shown as a function of the total sample size with error bars corresponding to standard error. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_qt_regression_meps_21_tab} for additional details and standard errors.}
     \label{fig:exp_qt_regression_meps_21}
 \end{figure}
 
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.8\linewidth]{figures/exp_qt_regression_blog_data.pdf}
-    \caption{Performance of conformal prediction intervals based on quantile regression models trained with different methods, on the {\em blog\_data} data set~\cite{blog_data}. The results are shown as a function of the total sample size with error bars corresponding to standard error. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_qt_regression_blog_data_tab} for more details.}
+    \caption{Performance of conformal prediction intervals based on quantile regression models trained with different methods, on the {\em blog\_data} data set~\cite{blog_data}. The results are shown as a function of the total sample size with error bars corresponding to standard error. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_qt_regression_blog_data_tab} for additional details and standard errors.}
     \label{fig:exp_qt_regression_blog_data}
 \end{figure}
 
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.8\linewidth]{figures/exp_qt_regression_star.pdf}
-    \caption{Performance of conformal prediction intervals based on quantile regression models trained with different methods, on the {\em STAR} data set~\cite{star}. The results are shown as a function of the total sample size with error bars corresponding to standard error. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_qt_regression_star_tab} for more details.}
+    \caption{Performance of conformal prediction intervals based on quantile regression models trained with different methods, on the {\em STAR} data set~\cite{star}. The results are shown as a function of the total sample size with error bars corresponding to standard error. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_qt_regression_star_tab} for additional details and standard errors.}
     \label{fig:exp_qt_regression_star}
 \end{figure}
 
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.8\linewidth]{figures/exp_qt_regression_bike.pdf}
-    \caption{Performance of conformal prediction intervals based on quantile regression models trained with different methods, on the {\em bike} data set~\cite{data-bike}. The results are shown as a function of the total sample size with error bars corresponding to standard error. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_qt_regression_bike_tab} for more details.}
+    \caption{Performance of conformal prediction intervals based on quantile regression models trained with different methods, on the {\em bike} data set~\cite{data-bike}. The results are shown as a function of the total sample size with error bars corresponding to standard error. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_qt_regression_bike_tab} for additional details and standard errors.}
     \label{fig:exp_qt_regression_bike}
 \end{figure}
 
