@@ -7,7 +7,7 @@ idir <- "results_hpc/exp1/"
 ifile.list <- list.files(idir)
 
 ##tab.dir <- "tables"
-tab.dir <- "/home/msesia/Workspace/research/active/Conformalized_early_stopping/CES_draft/tables"
+tab.dir <- "/home/msesia/Workspace/research/active/conformalized-es/paper/tables_new"
 fig.dir <- "figures"
 
 results.raw <- do.call("rbind", lapply(ifile.list, function(ifile) {
@@ -34,8 +34,7 @@ results <- results.raw %>%
     mutate(Value.upp = ifelse((Key=="Coverage (conditional)")*(Value.upp>1)==1, 1, Value.upp)) %>%
     mutate(Value.low = ifelse((Key=="Coverage (conditional)")*(Value.low<0)==1, 0, Value.low)) %>%
     mutate(Value.upp = ifelse((Key=="Coverage (marginal)")*(Value.upp>1)==1, 1, Value.upp)) %>%
-    mutate(Value.low = ifelse((Key=="Coverage (marginal)")*(Value.low<0)==1, 0, Value.low)) %>%
-    filter(Method!="Naive")
+    mutate(Value.low = ifelse((Key=="Coverage (marginal)")*(Value.low<0)==1, 0, Value.low))
 
 
 ## Make nice plots for paper
@@ -50,6 +49,7 @@ make_plot <- function(plot.data, xmax=2000) {
         mutate(Method = factor(method, method.values, method.labels)) %>%
         mutate(Key = factor(Key, key.values, key.labels))    
     pp <- results %>%
+        filter(Method!="Naive") %>%
         filter(Method != "NA") %>%
         filter(noise==plot.noise, data==plot.data, alpha==plot.alpha, lr==plot.lr, wd==plot.wd) %>%
         ggplot(aes(x=n, y=Value, color=Method, shape=Method)) +
@@ -84,6 +84,7 @@ make_plot_small <- function(plot.data, xmax=2000) {
         mutate(Method = factor(method, method.values, method.labels)) %>%
         mutate(Key = factor(Key, key.values, key.labels))    
     pp <- results %>%
+        filter(Method!="Naive") %>%
         filter(Method != "NA") %>%
         filter(noise==plot.noise, data==plot.data, alpha==plot.alpha, lr==plot.lr, wd==plot.wd) %>%
         ggplot(aes(x=n, y=Value, color=Method, shape=Method)) +
@@ -129,12 +130,10 @@ make_table <- function(plot.data, xmax=2000) {
         arrange(n, Method) %>%
         select(n, Data, Method, Width, everything())
     tb1 <- df %>%
-        kbl("latex", booktabs=TRUE, longtable = TRUE, escape = FALSE, caption = NA,
+        kbl("latex", booktabs=TRUE, longtable = FALSE, escape = FALSE, caption = NA,
                     col.names = c("Sample size", "Data", "Method", "Width", "Marginal", "Conditional")) %>%
         add_header_above(c(" " = 4, "Coverage" = 2)) %>%
-        pack_rows(index = table(df$n))
-        
-
+        pack_rows(index = table(df$n))        
     tb1 %>% save_kable(sprintf("%s/exp_regression_%s.tex", tab.dir, plot.data), keep_tex=TRUE, self_contained=FALSE)
 }
 make_table("bio")
