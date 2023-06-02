@@ -30,9 +30,9 @@ import __main__ as main
 
 sys.path.append('..')
 from third_party.classification import *
-from ConformalizedES.method_joint_training import CES_regression
-from ConformalizedES.networks_joint_training import quantreg_model, AllQuantileLoss
-from ConformalizedES.inference_joint_training import Conformal_PI
+from ConformalizedES.method import CES_regression
+from ConformalizedES.networks import quantreg_model, AllQuantileLoss
+from ConformalizedES.inference import Conformal_PI
 from ConformalizedES import theory
 from third_party.coverage import *
 

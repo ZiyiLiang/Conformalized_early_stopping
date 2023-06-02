@@ -84,7 +84,7 @@ for SEED in "${SEED_LIST[@]}"; do
 
                   if [[ $COMPLETE -eq 0 ]]; then
                     # Script to be run
-                    SCRIPT="exp_reg_qt_jointtraining.sh $DATA $METHOD $N $N_FEAT $NOISE $LR $WD $SEED $BS"
+                    SCRIPT="exp_reg_qt.sh $DATA $METHOD $N $N_FEAT $NOISE $LR $WD $SEED $BS"
                     # Define job name
                     OUTF=$LOGS"/"$JOBN".out"
                     ERRF=$LOGS"/"$JOBN".err"
