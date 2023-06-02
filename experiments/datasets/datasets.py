@@ -290,7 +290,8 @@ def GetDataset(name, base_path):
         #https://github.com/joefavergel/TertiaryPhysicochemicalProperties/blob/master/RMSD-ProteinTertiaryStructures.ipynb
         df = pd.read_csv(base_path + 'CASP.csv')        
         y = df.iloc[:,0].values
-        X = df.iloc[:,1:].values        
+        X = df.iloc[:,1:].values      
+        print(X.shape)  
         
     if name=='blog_data':
         # https://github.com/xinbinhuang/feature-selection_blogfeedback
@@ -331,6 +332,7 @@ def GetDataset(name, base_path):
         df.columns.to_series().groupby(df.dtypes).groups
         X = df.drop('count',axis=1).values
         y = df['count'].values
+
     
     if name=="community":
         # https://github.com/vbordalo/Communities-Crime/blob/master/Crime_v1.ipynb
@@ -343,9 +345,11 @@ def GetDataset(name, base_path):
         data = data.replace('?', np.nan)
         
         # Impute mean values for samples with missing values        
-        from sklearn.preprocessing import Imputer
-        
-        imputer = Imputer(missing_values = 'NaN', strategy = 'mean', axis = 0)
+        # from sklearn.preprocessing import Imputer
+        # imputer = Imputer(missing_values = 'NaN', strategy = 'mean', axis = 0)
+
+        from sklearn.impute import SimpleImputer
+        imputer = SimpleImputer(missing_values=np.nan, strategy='mean')        
         
         imputer = imputer.fit(data[['OtherPerCap']])
         data[['OtherPerCap']] = imputer.transform(data[['OtherPerCap']])

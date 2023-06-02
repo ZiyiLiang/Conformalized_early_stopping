@@ -235,4 +235,105 @@ class mse_model(nn.Module):
         return th.squeeze(self.base_model(x))
 
 def MSE_loss(outputs, inputs, targets):
-  return th.mean((outputs - targets)**2)
+    loss = th.mean((outputs - targets)**2)
+    return loss
+
+
+
+
+
+
+class quantreg_model(nn.Module):
+    """ Conditional quantile estimator, formulated as neural net
+    """
+    def __init__(self,
+                 quantiles = [0.05, 0.95],
+                 in_shape=1,
+                 hidden_size=64,
+                 dropout=0.5):
+        """ Initialization
+        Parameters
+        ----------
+        quantiles : numpy array of quantile levels (q), each in the range (0,1)
+        in_shape : integer, input signal dimension (p)
+        hidden_size : integer, hidden layer dimension
+        dropout : float, dropout rate
+        """
+        super().__init__()
+        self.quantiles = quantiles
+        if isinstance(self.quantiles, float):
+          self.num_quantiles = 1
+        else: 
+          self.num_quantiles = len(quantiles)
+        self.hidden_size = hidden_size
+        self.in_shape = in_shape
+        self.out_shape = self.num_quantiles
+        self.dropout = dropout
+        self.build_model()
+        self.init_weights()
+
+    def build_model(self):
+        """ Construct the network
+        """
+        self.base_model = nn.Sequential(
+            nn.Linear(self.in_shape, self.hidden_size),
+            nn.ReLU(),
+            nn.Dropout(self.dropout),
+            nn.Linear(self.hidden_size, self.hidden_size),
+            nn.ReLU(),
+            nn.Dropout(self.dropout),
+            nn.Linear(self.hidden_size, self.num_quantiles),
+        )
+
+    def init_weights(self):
+        """ Initialize the network parameters
+        """
+        for m in self.base_model:
+            if isinstance(m, nn.Linear):
+                nn.init.orthogonal_(m.weight)
+                nn.init.constant_(m.bias, 0)
+
+    def forward(self, x):
+        """ Run forward pass
+        """
+        return self.base_model(x)
+
+
+
+class AllQuantileLoss(nn.Module):
+    """ Pinball loss function
+    """
+    def __init__(self, quantiles):
+        """ Initialize
+        Parameters
+        ----------
+        quantiles : pytorch vector of quantile levels, each in the range (0,1)
+        """
+        super().__init__()
+        self.quantiles = quantiles
+
+    def forward(self, preds, inputs, target):
+        """ Compute the pinball loss
+        Parameters
+        ----------
+        preds : pytorch tensor of estimated labels (n)
+        target : pytorch tensor of true labels (n)
+        Returns
+        -------
+        loss : cost function value
+        """
+        assert not target.requires_grad
+        assert preds.size(0) == target.size(0)
+        losses = []
+
+        losses_sep = {}
+
+        for i, q in enumerate(self.quantiles):
+            errors = target - preds[:, i]
+            pinball_loss = th.max((q-1) * errors, q * errors).unsqueeze(1)
+            losses.append(pinball_loss)
+            losses_sep[q] = th.mean(pinball_loss)
+
+
+        loss = th.mean(th.sum(th.cat(losses, dim=1), dim=1))
+        return [loss, losses_sep]

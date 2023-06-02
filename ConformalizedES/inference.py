@@ -2,10 +2,11 @@ import time
 import os
 import torch as th
 import numpy as np
-import pdb
+
 import pathlib
 import sys
 from tqdm import tqdm
+from copy import deepcopy
 from classification import ProbabilityAccumulator as ProbAccum
 from scipy.stats.mstats import mquantiles
 from sympy import *
@@ -248,14 +249,16 @@ class Conformal_PVals:
         return list(pvals)
 
 
-
 class Conformal_PI:
     '''
     Class for computing prediction intervals for regression.
     '''
-    def __init__(self, net, device, cal_loader, alpha,
+    def __init__(self, device, cal_loader, alpha, net_quantile = None, net = None, 
                  verbose = True, progress = True, y_hat_min=None, y_hat_max=None) -> None:
-        self.net = net
+
+        self.net = net 
+        self.net_lower = net_quantile
+        self.net_higher = net_quantile
         self.device = device
         self.cal_loader = cal_loader
         self.alpha = alpha
@@ -270,11 +273,220 @@ class Conformal_PI:
             self.y_hat_max = y_hat_max
 
     def nonconformity_scores(self, output, target) -> float:
-        """ Absolute residual as non-conformity score
+        """ Absolute residual as non-conformity score, used for mean regression
         """
-        return np.abs(output - target)
+        err = np.abs(output - target)
+        return err 
 
-    def benchmark_ICP(self, test_inputs, best_model):
+    def score_CQR(self, output_lower, output_higher, target) -> float: 
+        """ Nonconformity score for quantile regression
+        """
+        error_low = output_lower - target
+        error_high = target - output_higher
+        err = np.maximum(error_high, error_low)
+        return err
+
+    # def apply_inverse(self, nc):
+    #     nc = np.sort(nc)
+    #     index = int(np.ceil((1 - self.alpha) * (nc.shape[0] + 1))) - 1
+    #     index = min(max(index, 0), nc.shape[0] - 1)
+    #     return nc[index]
+
+    def benchmark_CQR(self, test_inputs, bm_best_models_lower, bm_best_models_higher):
+
+      assert self.net_lower is not None, "input a deep quantile regression net"
+      assert self.net_higher is not None, "input a deep quantile regression net"
+      
+      self.net_lower.load_state_dict(th.load(bm_best_models_lower))
+      self.net_higher.load_state_dict(th.load(bm_best_models_higher))
+
+      cal_scores = []
+      qc_count = 0
+
+      for input, response in self.cal_loader:
+      #input, response = input.to(self.device), response.to(self.device)
+          with th.no_grad():
+              # make prediction
+              pred_lower = th.clip(self.net_lower(input)[0][0], self.y_hat_min, self.y_hat_max)
+              pred_higher = th.clip(self.net_higher(input)[0][1], self.y_hat_min, self.y_hat_max)
+              # quantile-crossing
+              if pred_lower > pred_higher:
+                qc_count += 1
+                pred_temp = pred_lower 
+                pred_lower = pred_higher
+                pred_higher = pred_temp
+
+              score = self.score_CQR(output_lower = pred_lower, output_higher = pred_higher, target = response)
+              cal_scores.append(score.data.numpy())
+
+      cal_scores = [j for i in cal_scores for j in i]
+      n_cal = len(cal_scores)
+      # Get the score quantile
+      qhat = np.quantile(cal_scores, np.ceil((n_cal+1)*(1-self.alpha))/n_cal, interpolation ='lower')
+      
+
+      test_pred_lower = th.clip(self.net_lower(test_inputs)[0][0], self.y_hat_min, self.y_hat_max)
+      test_pred_higher = th.clip(self.net_higher(test_inputs)[0][1], self.y_hat_min, self.y_hat_max)
+      # quantile-crossing
+      if test_pred_lower > test_pred_higher:
+        qc_count += 1
+        pred_temp = test_pred_lower 
+        test_pred_lower = test_pred_higher
+        test_pred_higher = pred_temp
+      print('quantile crossing occured {} times'.format(qc_count))
+      # construct prediction interval for the test point
+      pi = [Interval(test_pred_lower - qhat,test_pred_higher + qhat)]
+      return pi
+
+    
+    def CES_CQR(self, test_inputs, best_models_lower, best_models_higher, method = ['union','cvxh'], no_empty = False, bm_best_models_higher = None, bm_best_models_lower = None):
+        """Compute conformal prediction intervals for test inputs using the CES methods
+
+        Args:
+            test_inputs (tensor): test covariates
+            best_model_lower (str): list of dictionaries containing information of the best model for lower quantile 
+            best_model_higher (str): list of dictionaries containing information of the best model for higher quantile 
+            bm_best_models_higher/bm_best_models_lower (str): benchmark best models (used when returning empty set)
+            method (str): whether to take union or convex hull when forming the final prediction intervals
+            no_empty (bool): whether to avoid empty prediction interval
+
+        Returns:
+            list of intervals : list of prediction interval
+            format of the output (Example) : [Interval(2.5 , 3)]
+        """
+
+        
+        assert method in ['union','cvxh'], "choose a method from 'union' or 'cvxh'"
+        assert self.net_lower is not None, "input a deep quantile regression net"
+        assert self.net_higher is not None, "input a deep quantile regression net"
+
+        def concat_models(best_models_lower, best_models_higher): 
+          '''Combine all unique knots from both lower quantile models and higher quantile models, so that within each knot interval, 
+          there exist a unique best model for the lower quantile and a unique best model for the higher quantile
+          '''
+          best_models_lower_cp = deepcopy(best_models_lower)
+          best_models_higher_cp = deepcopy(best_models_higher)
+
+          for x in best_models_lower_cp:
+            x["model_lower"] = x.pop("model")
+          for x in best_models_higher_cp:
+            x["model_higher"] = x.pop("model")
+          
+          concat_models = []
+          
+          curr_lower = 0
+          curr_higher = 0
+
+          n = len(set([i['knot_lower'] for i in best_models_lower_cp] + [i['knot_lower'] for i in best_models_higher_cp]))
+            
+          concat_models.append({'model_lower': best_models_lower_cp[0]['model_lower'], 
+                                  'model_higher': best_models_higher_cp[0]['model_higher'], 
+                                  'knot_lower': -np.inf,
+                                  'knot_upper': min(best_models_lower_cp[0]['knot_upper'], best_models_higher_cp[0]['knot_upper'])})
+          for i in range(n-1): 
+            if best_models_lower_cp[curr_lower]['knot_upper'] <= best_models_higher_cp[curr_higher]['knot_upper']: 
+              curr_lower += 1
+
+              concat_models.append({'model_lower': best_models_lower_cp[curr_lower]['model_lower'], 
+                              'model_higher': best_models_higher_cp[curr_higher ]['model_higher'], 
+                              'knot_lower': best_models_lower_cp[curr_lower]['knot_lower'],
+                              'knot_upper': min(best_models_lower_cp[curr_lower]['knot_upper'],best_models_higher_cp[curr_higher]['knot_upper'])})
+            else: 
+              curr_higher += 1
+              concat_models.append({'model_lower': best_models_lower_cp[curr_lower]['model_lower'], 
+                              'model_higher': best_models_higher_cp[curr_higher]['model_higher'], 
+                              'knot_lower': best_models_higher_cp[curr_higher]['knot_lower'],
+                              'knot_upper': min(best_models_lower_cp[curr_lower]['knot_upper'],best_models_higher_cp[curr_higher]['knot_upper'])})
+              
+          return concat_models 
+
+
+        concat_results = concat_models(best_models_lower, best_models_higher)
+
+        # store the final prediction intervals
+        model_pi = []
+        qc_count = 0
+
+        for idx, result in enumerate(concat_results):
+          self.net_lower.load_state_dict(th.load(result['model_lower']))
+          self.net_higher.load_state_dict(th.load(result['model_higher']))
+
+          cal_scores = []
+
+          for input, response in self.cal_loader:
+          #input, response = input.to(self.device), response.to(self.device)
+              with th.no_grad():
+                  # make prediction
+                  pred_lower = th.clip(self.net_lower(input)[0][0], self.y_hat_min, self.y_hat_max)
+                  pred_higher = th.clip(self.net_higher(input)[0][1], self.y_hat_min, self.y_hat_max)
+                  if pred_lower > pred_higher:
+                    qc_count += 1
+                    pred_temp = pred_lower 
+                    pred_lower = pred_higher
+                    pred_higher = pred_temp
+
+                  score = self.score_CQR(pred_lower, pred_higher, response)
+                  cal_scores.append(score.data.numpy())
+
+          cal_scores = [j for i in cal_scores for j in i]
+          n_cal = len(cal_scores)
+          # Get the score quantile
+          qhat = np.quantile(cal_scores, np.ceil((n_cal+1)*(1-self.alpha))/n_cal, interpolation ='lower')
+
+          # with th.no_grad():
+          test_pred_lower = th.clip(self.net_lower(test_inputs)[0][0], self.y_hat_min, self.y_hat_max)
+          test_pred_higher = th.clip(self.net_higher(test_inputs)[0][1], self.y_hat_min, self.y_hat_max)
+          if test_pred_lower > test_pred_higher:
+            qc_count += 1
+            pred_temp = test_pred_lower 
+            test_pred_lower = test_pred_higher
+            test_pred_higher = pred_temp
+      
+          # # construct prediction interval for the test point
+          # take overlap between the original prediction intervals and the knots intervals
+          truncated_pi = [max(test_pred_lower - qhat, result['knot_lower']), min(test_pred_higher + qhat, result['knot_upper'])]
+
+          # drop the invalid prediction intervals
+          if truncated_pi[0] > truncated_pi[1]:
+              # print('drop non-overlapping set')
+              continue
+
+          model_pi.append(truncated_pi)
+
+        print('quantile crossing occured {} times'.format(qc_count))
+
+        if no_empty and len(model_pi) == 0:
+          assert bm_best_models_higher is not None, "need to input a benchmark best model for deep quantile regression!"
+          assert bm_best_models_lower is not None, "need to input a benchmark best model for deep quantile regression!"
+
+          pi = self.benchmark_CQR(test_inputs, bm_best_models_lower, bm_best_models_higher)
+          print('avoided empty interval, final pi is {}'.format(pi))
+          return pi
+
+        if method == 'union':
+          def union(data):
+              """ Union of a list of intervals """
+              intervals = [Interval(l, u) for (l, u) in data]
+              uni = Union(*intervals)
+              return [list(uni.args[:2])] if isinstance(uni, Interval) else list(uni.args)
+
+          # take union of the list of intervals
+          unioned_pi = union(model_pi)
+
+          if len(unioned_pi)==1:
+              # convert the format into Interval
+              unioned_pi = [Interval(unioned_pi[0][0],unioned_pi[0][1])]
+          return unioned_pi
+
+
+        elif method == 'cvxh':
+          l = min(model_pi, key=lambda x: x[0])[0]
+          u = max(model_pi, key=lambda x: x[1])[1]
+          return [Interval(l,u)]
+
+
+
+    def benchmark_ICP(self, test_inputs, bm_best_model):
         """Compute conformal prediction intervals for test inputs using the benchmark methods
 
         Args:
@@ -285,7 +497,8 @@ class Conformal_PI:
             list of intervals : list of prediction interval
             format of the output (Example) : [Interval(2.5 , 3)]
         """
-        self.net.load_state_dict(th.load(best_model))
+        assert self.net is not None, "need to input a deep neural net trained minimizing MSE"
+        self.net.load_state_dict(th.load(bm_best_model))
 
         cal_scores = []
         for X_batch, y_batch in self.cal_loader:
@@ -293,7 +506,6 @@ class Conformal_PI:
             with th.no_grad():
                 # make prediction using the model trained
                 pred = th.clip(self.net(X_batch), self.y_hat_min, self.y_hat_max)
-                # pred = pred.to(self.device)
                 # compute the conformity scores using predictions and the real calibration response
                 score = self.nonconformity_scores(pred, y_batch)
                 cal_scores.append(score.data.numpy())
@@ -328,6 +540,7 @@ class Conformal_PI:
         """
 
         assert method in ['union','cvxh'], "choose a method from 'union' or 'cvxh'"
+        assert self.net is not None, "need to input a deep neural net trained minimizing MSE"
 
         # store the final prediction intervals
         model_pi = []
@@ -344,7 +557,6 @@ class Conformal_PI:
               with th.no_grad():
                   # make prediction
                   pred = th.clip(self.net(input), self.y_hat_min, self.y_hat_max)
-              # pred = pred.to(self.device)
               # compute the conformity scores
               score = self.nonconformity_scores(pred, response)
               cal_scores.append(score.data.numpy())
@@ -357,29 +569,26 @@ class Conformal_PI:
           test_pred = th.clip(self.net(test_inputs), self.y_hat_min, self.y_hat_max).data.numpy()
           # original prediction intervals constructed in a standard ICP way
           initial_pi = [test_pred - qhat, test_pred + qhat]
-          # print('test_pred {}'.format(test_pred))
 
           # take overlap between the original prediction intervals and the knots intervals
           truncated_pi = [max(initial_pi[0], bm['knot_lower']), min(initial_pi[1], bm['knot_upper'])]
 
           # drop the invalid prediction intervals
           if truncated_pi[0] > truncated_pi[1]:
-              # print('drop non-overlapping set')
               continue
-          # else:
-          #     print('using model {}'.format(bm))
 
           model_pi.append(truncated_pi)
 
         if no_empty and len(model_pi) == 0:
-          assert mod, "need to input model!"
-          bm_best_loss, bm_best_model, bm_test_val_loss_history = mod.select_model(test_inputs = None)
+          assert mod is not None, "need to input a benchmark best model!"
+          _, bm_best_model, _ = mod.select_model(test_inputs = None)
           pi = self.benchmark_ICP(test_inputs, bm_best_model)
           print('avoided empty interval, final pi is {}'.format(pi))
           return pi
 
-
-
+        if len(model_pi) == 0: 
+            return [EmptySet]
+        
         if method == 'union':
           def union(data):
               """ Union of a list of intervals """
@@ -400,3 +609,4 @@ class Conformal_PI:
           l = min(model_pi, key=lambda x: x[0])[0]
           u = max(model_pi, key=lambda x: x[1])[1]
           return [Interval(l,u)]
+      
