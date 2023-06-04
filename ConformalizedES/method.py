@@ -114,7 +114,6 @@ class ConformalizedES:
         self.val_loss_history = []
         self.total_val_loss_history = []
         self.sep_val_loss_history = {}
-        print('start joint training...')
 
         if self.acc:
             self.train_acc_history = []

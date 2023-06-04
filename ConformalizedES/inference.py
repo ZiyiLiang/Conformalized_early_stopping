@@ -255,7 +255,10 @@ class Conformal_PI:
     '''
     def __init__(self, device, cal_loader, alpha, net_quantile = None, net = None, 
                  verbose = True, progress = True, y_hat_min=None, y_hat_max=None) -> None:
-
+        """
+        Input net and load model into net if using mean regression.
+        Input net_quantile and load model into net_quantile if using quantile regression. In the experiments, we trained one network to output two quantiles.
+        """
         self.net = net 
         self.net_lower = net_quantile
         self.net_higher = net_quantile
