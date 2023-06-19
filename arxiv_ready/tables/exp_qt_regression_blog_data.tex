@@ -1,0 +1,38 @@
+
+\begin{tabular}[t]{rlllll}
+\toprule
+\multicolumn{4}{c}{ } & \multicolumn{2}{c}{Coverage} \\
+\cmidrule(l{3pt}r{3pt}){5-6}
+Sample size & Data & Method & Width & Marginal & Conditional\\
+\midrule
+\addlinespace[0.3em]
+\multicolumn{6}{l}{\textbf{200}}\\
+\hspace{1em}200 & blog\_data & CES & 4.658 (0.194) & 0.911 (0.007) & \textcolor{red}{0.779 (0.021)}\\
+\hspace{1em}200 & blog\_data & Naive & \textbf{3.427 (0.210)} & 0.897 (0.008) & \textcolor{red}{0.766 (0.021)}\\
+\hspace{1em}200 & blog\_data & Naive + theory & 22.166 (5.645) & 0.973 (0.004) & 0.917 (0.017)\\
+\hspace{1em}200 & blog\_data & Data splitting & \textbf{4.049 (0.359)} & 0.892 (0.013) & \textcolor{red}{0.720 (0.034)}\\
+\hspace{1em}200 & blog\_data & Full training & 7.524 (0.544) & 0.910 (0.007) & \textcolor{red}{0.662 (0.026)}\\
+\addlinespace[0.3em]
+\multicolumn{6}{l}{\textbf{500}}\\
+\hspace{1em}500 & blog\_data & CES & 4.538 (0.291) & 0.924 (0.005) & \textcolor{red}{0.819 (0.017)}\\
+\hspace{1em}500 & blog\_data & Naive & 3.986 (0.333) & 0.917 (0.005) & \textcolor{red}{0.796 (0.014)}\\
+\hspace{1em}500 & blog\_data & Naive + theory & 58.965 (11.745) & 0.992 (0.002) & 0.987 (0.004)\\
+\hspace{1em}500 & blog\_data & Data splitting & \textbf{3.443 (0.139)} & 0.905 (0.005) & \textcolor{red}{0.751 (0.020)}\\
+\hspace{1em}500 & blog\_data & Full training & 9.364 (0.535) & 0.927 (0.003) & \textcolor{red}{0.719 (0.019)}\\
+\addlinespace[0.3em]
+\multicolumn{6}{l}{\textbf{1000}}\\
+\hspace{1em}1000 & blog\_data & CES & 4.313 (0.088) & 0.903 (0.004) & \textcolor{red}{0.812 (0.016)}\\
+\hspace{1em}1000 & blog\_data & Naive & \textbf{3.559 (0.073)} & 0.896 (0.004) & \textcolor{red}{0.816 (0.016)}\\
+\hspace{1em}1000 & blog\_data & Naive + theory & 7.336 (0.620) & 0.973 (0.002) & 0.951 (0.007)\\
+\hspace{1em}1000 & blog\_data & Data splitting & \textbf{3.525 (0.119)} & 0.896 (0.003) & \textcolor{red}{0.788 (0.015)}\\
+\hspace{1em}1000 & blog\_data & Full training & 7.784 (0.427) & 0.919 (0.003) & \textcolor{red}{0.694 (0.018)}\\
+\addlinespace[0.3em]
+\multicolumn{6}{l}{\textbf{2000}}\\
+\hspace{1em}2000 & blog\_data & CES & 4.169 (0.066) & 0.906 (0.003) & \textcolor{red}{0.808 (0.013)}\\
+\hspace{1em}2000 & blog\_data & Naive & \textbf{3.671 (0.047)} & 0.899 (0.003) & \textcolor{red}{0.783 (0.018)}\\
+\hspace{1em}2000 & blog\_data & Naive + theory & 4.486 (0.074) & 0.954 (0.002) & 0.911 (0.009)\\
+\hspace{1em}2000 & blog\_data & Data splitting & \textbf{3.625 (0.069)} & 0.899 (0.003) & \textcolor{red}{0.805 (0.011)}\\
+\hspace{1em}2000 & blog\_data & Full training & 5.323 (0.274) & 0.909 (0.003) & \textcolor{red}{0.718 (0.014)}\\
+\bottomrule
+\end{tabular}
+
