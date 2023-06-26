@@ -29,7 +29,7 @@ As high-quality observations can be expensive to collect, in some situations pra
 This concern is relevant because the size of the calibration set cannot be too small if one wants stable and reliable conformal inferences~\citep{vovk2012conditional,sesia2020comparison}.
 In fact, very large calibration sets may be necessary to obtain stronger conformal inferences that are valid not only on average but also conditionally on some important individual features; see \citet{vovk2003mondrian,romano2019malice,barber2019limits}.
 
-This paper resolves the above dilemma by showing that conformal inferences for deep learning models trained with early stopping can be obtained almost ``for free''---without spending precious data.
+This paper resolves the above dilemma by showing that conformal inferences for deep learning models trained with early stopping can be obtained almost ``for free''---without spending more precious data.
 More precisely, we present an innovative method that blends model training with early stopping and conformal calibration using the same hold-out samples, essentially obtaining rigorous predictive inferences at no additional data cost compared to standard early stopping.
 It is worth emphasizing this result is not trivial.
 In fact, naively applying existing conformal calibration methods using the same hold-out samples utilized for early stopping would not lead to theoretically valid inferences, at least not without resorting to very conservative corrections.
@@ -71,7 +71,7 @@ Similarly, the loss evaluated on $\mathcal{D}_{\text{es}}$ is denoted as $\mathc
 After training for $t^{\text{max}}$ epochs, early stopping selects the model $\hat{M}_{\text{es}}$ that minimizes the loss on $\mathcal{D}_{\text{es}}$:
 $\hat{M}_{\text{es}} = \argmin_{M_t \, : \, 0 \leq t \leq t^{\text{max}}} \mathcal{L}_{\text{es}}(M_t)$.
 Conformal calibration of $\hat{M}_{\text{es}}$ is then conducted using the independent hold-out data set $\mathcal{D}_{\text{cal}}$, as sketched in Figure~\ref{fig:ces_data_splitting}~(a).
-This pipeline requires a three-way data split because: (i) $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es}}$ must be disjoint to ensure the early stopping criterion is effective at mitigating overfitting; and (ii) $\mathcal{D}_{\text{cal}}$ must be disjoint from $\mathcal{D}_{\text{train}} \cup \mathcal{D}_{\text{es}}$ to ensure the performance of the selected model $\hat{M}_{\text{es}}$ on the calibration data gives us an unbiased preview of its future performance at test time.
+This pipeline requires a three-way data split because: (i) $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es}}$ must be disjoint to ensure the early stopping criterion is effective at mitigating overfitting; and (ii) $\mathcal{D}_{\text{cal}}$ must be disjoint from $\mathcal{D}_{\text{train}} \cup \mathcal{D}_{\text{es}}$ to ensure the performance of the selected model $\hat{M}_{\text{es}}$ on the calibration data gives us an unbiased preview of its future performance at test time, enabling valid conformal inferences.
 
 \begin{figure*}[!htb]
   \centering
@@ -81,15 +81,16 @@ This pipeline requires a three-way data split because: (i) $\mathcal{D}_{\text{t
   \label{fig:ces_data_splitting}
 \end{figure*}
 
-\subsection{The Limitations of a Heuristic Benchmark}
+\subsection{The Limitations of a Naive Benchmark}
 \label{sec:naive_benchmark}
 
-An intuitive benchmark consists of naively performing standard conformal inference using the same hold-out samples utilized for early stopping, as sketched in Figure~\ref{fig:naive_diagram}. 
-This approach may seem efficient, as it avoids a three-way data split, but it fails to provide theoretically valid conformal inferences. In fact, using the same hold-out data twice---first to evaluate the early stopping criterion and then to perform conformal calibration---breaks the necessary exchangeability with the test point. 
-In principle, this issue could be corrected by applying a conservative adjustment to the nominal significance level of the conformal inferences, as studied for example by \citet{efficiency_first_cp} and reviewed in Appendix~\ref{app:naive-benchmarks}. 
-However, the naive benchmark provides overly conservative inferences in practice when applied with the required theoretical correction, even if a tighter adjustment developed in Appendix~\ref{app:naive-benchmarks} is utilized instead of that of \citet{efficiency_first_cp}.
-Intuitively, the challenge arises from the fact that there tend to be complicated dependencies within the collection of candidate models provided to the early stopping algorithm, but the available theoretical corrections must take a much more simplistic and pessimistic viewpoint of this model selection process.
+An intuitive alternative to the standard approach described in the previous section is to naively perform standard conformal inference using the same hold-out samples utilized for early stopping, as sketched in Figure~\ref{fig:naive_diagram}.
+This approach, which we call the {\em naive benchmark}, may seem appealing as it avoids a three-way data split, but it does not provide rigorous inferences. In fact, the necessary exchangeability with the test point is broken if the same hold-out data are used twice---first to evaluate the early stopping criterion and then to perform conformal calibration.
+In principle, the issue could be corrected by applying a conservative adjustment to the nominal significance level of the conformal inferences, as studied by \citet{efficiency_first_cp} and reviewed in Appendix~\ref{app:naive-benchmarks}. 
+However, this leads to overly conservative inferences in practice when applied with the required theoretical correction, as demonstrated by the numerical experiments summarized in Figure~\ref{fig:exp_regression_bio}, even if a tighter adjustment developed in Appendix~\ref{app:naive-benchmarks} is utilized instead of that of \citet{efficiency_first_cp}.
+Intuitively, the problem is that there tend to be complicated dependencies among the candidate models provided to the early stopping algorithm, but the available analyses are not equipped to handle such intricacies and must therefore take a pessimistic viewpoint of the model selection process.
 Thus, the naive benchmark remains unsatisfactory, although it can serve as an informative benchmark for the novel method developed in this paper.
+Interestingly, we will see empirically that the naive benchmark applied without the required theoretical corrections often performs similarly to the rigorous method proposed in this paper, especially for large data sets.
 
 \begin{figure*}[!htb]
   \centering
@@ -98,12 +99,6 @@ Thus, the naive benchmark remains unsatisfactory, although it can serve as an in
   \label{fig:naive_diagram}
 \end{figure*}
 
-\subsection{Preview of our Contribution}
-
-This paper develops a novel method to jointly carry out both early stopping and conformal inference using a single hold-out data set, denoted in the following as  $\mathcal{D}_{\text{es-cal}}$. The advantage of this approach is that it allows more samples to be allocated to  $\mathcal{D}_{\text{train}}$ without invalidating the final conformal inferences.
-This is not a straightforward problem. As explained above, the naive heuristic is not valid and adjustment is needed to meet the nominal coverage.  
- However, such theoretical corrections tend to be overly pessimistic in practice and may often be too conservative to be useful; this is demonstrated by the numerical experiments described in Section~\ref{sec:numerical_results} and previewed here in Figure~\ref{fig:exp_regression_bio}.
-
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.65\linewidth]{figures/exp_regression_bio_small.pdf}\vspace{-0.3cm}
@@ -111,10 +106,13 @@ This is not a straightforward problem. As explained above, the naive heuristic i
     \label{fig:exp_regression_bio}
 \end{figure}
 
-By contrast, the CES method proposed in this paper is based on the following idea inspired by \citet{Liang_2022_integrative_p_val}.
+\subsection{Preview of our Contribution}
+
+This paper develops a novel conformalized early stopping (CES) method to jointly carry out both early stopping and conformal inference using a single hold-out data set, denoted in the following as  $\mathcal{D}_{\text{es-cal}}$. The advantage of this approach is that it avoids a three-way data split, so that more samples can be allocated to  $\mathcal{D}_{\text{train}}$, without breaking the required data exchangeability. As a result, CES often leads to relatively more reliable and informative conformal inferences compared to other existing approaches; e.g., see for example the empirical performance preview shown in Figure~\ref{fig:exp_regression_bio}.
+The CES method is based on the following idea inspired by \citet{Liang_2022_integrative_p_val}.
 Valid conformal inferences can be obtained by calibrating $\hat{M}_{\text{es}}$ using the same data set $\mathcal{D}_{\text{es-cal}}$ used for model selection, as long as the test sample  $Z_{n+1}$ is also involved in the early stopping rule exchangeably with all other samples in $\mathcal{D}_{\text{es-cal}}$.
 This concept, sketched in Figure~\ref{fig:ces_data_splitting}~(b), is not obvious to translate into a practical method, however, for two reasons.
-First, the ground truth for the test point (i.e., its outlier status or its outcome label) is unknown. Second, the method may need to be repeatedly applied for a large number of distinct test points in a computationally efficient way, and one cannot re-train the model separately for each test point.
+Firstly, the ground truth for the test point (i.e., its outlier status or its outcome label) is unknown. Secondly, the method may need to be repeatedly applied for a large number of distinct test points in a computationally efficient way, and one cannot re-train the model separately for each test point.
 In the next section, we will explain how to overcome these challenges in the special case of early stopping for outlier detection; then, the solution will be extended to the classification and regression settings.
 
 \subsection{CES for Outlier Detection} \label{sec:outlier}
@@ -180,7 +178,7 @@ Assume $Z_{1}, \ldots, Z_{n}, Z_{n+1}$ are exchangeable random samples, and let 
 The above CES method will now be extended to deal with $K$-class classification problems, for any $K \geq 2$.
 Consider $n$ exchangeable pairs of observations $(X_i,Y_i)$, for $i \in \mathcal{D} = [n]$, and a test point $(X_{n+1}, Y_{n+1})$ whose label $Y_{n+1} \in [K]$ has not yet been observed. The goal is to construct an informative prediction set for $Y_{n+1}$ given the observed features $X_{n+1}$ and the rest of the data, assuming $(X_{n+1},Y_{n+1})$ is exchangeable with the observations indexed by $\mathcal{D}$.
 An ideal goal would be to construct the smallest possible prediction set with guaranteed {\em feature-conditional coverage} at level $1-\alpha$, for any fixed $\alpha \in (0,1)$. Formally, a prediction set $\hat{C}_{\alpha}(X_{n+1}) \subseteq [K]$ has feature-conditional coverage at level $1-\alpha$ if $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1}) \mid X_{n+1} = x] \geq 1-\alpha$, for any $x \in \mathcal{X}$, where $\mathcal{X}$ is the feature space.
-Unfortunately, perfect feature-conditional coverage is extremely difficult to achieve unless the feature space $\mathcal{X}$ is very small. Therefore, in practice, one must be satisfied with obtaining relatively weaker guarantees, such as {\em label-conditional coverage} and {\em marginal coverage}. Formally,  $\hat{C}_{\alpha}(X_{n+1})$ has $1-\alpha$ label-conditional coverage if $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1}) \mid Y_{n+1} = y] \geq 1-\alpha$, for any $y \in [K]$, while marginal coverage corresponds to $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1}) ] \geq 1-\alpha$. Label-conditional coverage is stronger than marginal coverage, but both criteria are useful because the latter is easier to achieve with smaller (and hence more informative) prediction sets.
+Unfortunately, perfect feature-conditional coverage is extremely difficult to achieve unless the feature space $\mathcal{X}$ is very small~\cite{barber2019limits}. Therefore, in practice, one must be satisfied with obtaining relatively weaker guarantees, such as {\em label-conditional coverage} and {\em marginal coverage}. Formally,  $\hat{C}_{\alpha}(X_{n+1})$ has $1-\alpha$ label-conditional coverage if $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1}) \mid Y_{n+1} = y] \geq 1-\alpha$, for any $y \in [K]$, while marginal coverage corresponds to $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1}) ] \geq 1-\alpha$. Label-conditional coverage is stronger than marginal coverage, but both criteria are useful because the latter is easier to achieve with smaller (and hence more informative) prediction sets.
 
 
 We begin by focusing on label-conditional coverage, as this follows most easily from the results of Section~\ref{sec:outlier}. This solution will be extended in Appendix~\ref{app:class-marg} to target marginal coverage.
@@ -489,7 +487,6 @@ Figure~\ref{fig:exp_oc} summarizes the performance of the four methods as a func
 The increased power of CES compared to data splitting is not surprising, as the latter relies on a less accurate model trained on less data.
 By contrast, the naive benchmark trains a model more similar to that of CES, but its TPR is not as high because the theoretical correction for the naive conformal p-values is overly pessimistic.
 Finally, full training is the least powerful competitor for large sample sizes because its underlying model becomes more and more overconfident as the training set grows.
-
 Note that Table~\ref{tab:exp_oc} also includes the results obtained with the naive benchmark detailed in Appendix~\ref{app:naive-benchmarks}, applied without the theoretical correction necessary to guarantee marginal coverage. Remarkably, the results show that the naive benchmark performs similarly to the CES method, even though only the latter has the advantage of enjoying rigorous finite-sample guarantees.
 
 \subsection{Multi-class Classification} \label{sec:num_mc}
