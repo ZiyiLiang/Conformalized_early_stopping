@@ -10,8 +10,6 @@ from scipy.stats.mstats import mquantiles
 from collections import OrderedDict
 import numdifftools as nd
 
-sys.path.append('../third_party')
-from classification import ProbabilityAccumulator as ProbAccum
 
 class ConformalizedES:
     def __init__(self, net, device, train_loader, batch_size, max_epoch, learning_rate, criterion, optimizer,
