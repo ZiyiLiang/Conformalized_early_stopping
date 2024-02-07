@@ -2,13 +2,15 @@ import time
 import os
 import torch as th
 import numpy as np
-import pdb
 import pathlib
 import sys
 from tqdm import tqdm
-from classification import ProbabilityAccumulator as ProbAccum
 from scipy.stats.mstats import mquantiles
 from sympy import *
+
+sys.path.append('../third_party')
+from classification import ProbabilityAccumulator as ProbAccum
+
 
 
 class Conformal_PSet:

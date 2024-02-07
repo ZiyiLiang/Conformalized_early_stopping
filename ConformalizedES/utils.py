@@ -4,7 +4,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.stats.multitest import multipletests
 from tqdm import tqdm
-import pdb
 
 def filter_BH(pvals, alpha, Y):
     is_nonnull = (Y==1)

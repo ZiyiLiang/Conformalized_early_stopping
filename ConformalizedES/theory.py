@@ -3,7 +3,6 @@ import math
 from math import sqrt,log, exp
 from scipy.stats import beta
 
-import pdb
 
 def DKW_bound(T,n,a):
     """
