@@ -25,8 +25,7 @@
 
 \subsection{Detailed Implementation of the Naive Benchmarks}  \label{app:naive-benchmarks-details}
 
-We detail here the implementation of the naive benchmark considered in this paper, which consist of performing standard conformal calibration using the same hold-out samples utilized by standard early stopping techniques.
-This does not yield theoretically valid conformal inferences in finite samples because greedily utilizing the same hold-out data set twice, both to evaluate the early stopping criterion and to perform conformal calibration, will break the necessary exchangeability with the test point. Nonetheless, this approach can serve as an informative benchmark and it becomes useful in Appendix~\ref{app:reg-noempty} to extend our rigorous conformalized early stopping method for regression problems in such as way as to explicitly avoid returning empty prediction intervals.
+We detail here the implementation of the naive benchmark discussed in Section~\ref{sec:naive_benchmark}. This approach can serve as an informative benchmark and it becomes useful in Appendix~\ref{app:reg-noempty} to extend our rigorous conformalized early stopping method for regression problems in such as way as to explicitly avoid returning empty prediction intervals.
 For completeness, we present the implementation of the naive benchmark separately for outlier detection, multi-class classification, and regression, respectively in Algorithms~\ref{alg:naive-one}, \ref{alg:naive-multi} and~\ref{alg:naive-reg}.
 Note that Algorithm~\ref{alg:naive-multi} also allows for the possibility of computing prediction sets seeking (approximate) marginal coverage instead of (approximate) label-conditional coverage for multi-class classification problems; see Appendix~\ref{app:class-marg} for further details on multi-class classification with marginal coverage.
 
@@ -39,7 +38,7 @@ Note that Algorithm~\ref{alg:naive-multi} also allows for the possibility of com
         \STATE \textcolor{white}{\textbf{Input}:} One-class classifier trainable via (stochastic) gradient descent.
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
         \STATE Train the one-class classifier for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
-        \STATE Pick the most promising model $t^* \in [T]$ minimizing $\mathcal{L}_{\text{es-cal}}(M_t)$ in \eqref{eq:loss-ces}, using the data in $\mathcal{D}_{\text{es-cal}}$.
+        \STATE Pick the most promising model $t^* \in [T]$ minimizing $\mathcal{L}_{\text{es-cal}}(M_t)$ in \eqref{eq:loss-ces}, based on $\mathcal{D}_{\text{es-cal}}$.
         \STATE Compute nonconformity scores $\hat{S}_i(Z_{n+1})$ for all $i \in \mathcal{D}_{\text{es-cal}} \cup \{n+1\}$ using model $t^*$.
         \STATE \textbf{Output}: Naive conformal p-value $\hat{u}_0^{\textup{naive}}(Z_{n+1})$ given by \eqref{eq:conformal_pval}.
     \end{algorithmic}
@@ -55,7 +54,7 @@ Note that Algorithm~\ref{alg:naive-multi} also allows for the possibility of com
         \STATE \textcolor{white}{\textbf{Input}:} $K$-class classifier trainable via (stochastic) gradient descent.
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
         \STATE Train the $K$-class classifier for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
-        \STATE Pick the most promising model $t^* \in [T]$ minimizing $\mathcal{L}_{\text{es-cal}}(M_t)$ in \eqref{eq:loss-ces-class}, using the data in $\mathcal{D}_{\text{es-cal}}$.
+        \STATE Pick the most promising model $t^* \in [T]$ minimizing $\mathcal{L}_{\text{es-cal}}(M_t)$ in \eqref{eq:loss-ces-class}, based on $\mathcal{D}_{\text{es-cal}}$.
         \FOR{$ y \in [K]$}
         \IF{Label-conditional coverage is desired}
         \STATE Define $\mathcal{D}^y_{\text{es-cal}} = \{i \in \mathcal{D}_{\text{es-cal}} : Y_i = y \}$.
@@ -87,9 +86,9 @@ Note that Algorithm~\ref{alg:naive-multi} also allows for the possibility of com
         \STATE Train the regression model for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
         \STATE Pick the most promising model $t^* \in [T]$ minimizing $\mathcal{L}_{\text{es-cal}}(M_t)$ in \eqref{eq:loss-ces-reg}.
         \STATE Evaluate nonconformity scores $\hat{S}_i(X_{n+1}) = | Y_i - \hat{\mu}_{t^*}(X_{i})|$ for all $i \in \mathcal{D}_{\text{es-cal}}$.
-        \STATE Compute $\hat{Q}_{1-\alpha}(X_{n+1}) = \lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil\text{-th largest value in }
+        \STATE Compute $\hat{Q}_{1-\alpha}(X_{n+1}) = \lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil\text{-th smallest value in }
         \hat{S}_i(X_{n+1})$ for $i \in \mathcal{D}_{\text{es-cal}}$.
-        \STATE \textbf{Output}: Naive prediction interval $\hat{C}^{\text{naive}}_{\alpha}(X_{n+1}) = \hat{\mu}_{t^*}(X_{n+1}) \pm \hat{Q}_{1-\alpha}(X_{n+1})$.
+        \STATE \textbf{Output}: Prediction interval $\hat{C}^{\text{naive}}_{\alpha}(X_{n+1}) = \hat{\mu}_{t^*}(X_{n+1}) \pm \hat{Q}_{1-\alpha}(X_{n+1})$.
     \end{algorithmic}
 \end{algorithm}
 
@@ -104,11 +103,11 @@ Unfortunately, as demonstrated in Section~\ref{sec:numerical_results}, these the
 For simplicity, we will begin by focusing on outlier detection.
 
 
-\noindent \textbf{Review of existing results based on the DKW inequality.}
+\noindent \textbf{Review of existing results based on the DKW inequality.}\\
 \citet{efficiency_first_cp} have recently studied the finite-sample coverage rate of a conformal prediction interval formed by naively calibrating a model selected among $T$ possible candidates based on its performance on the calibration data set itself, which we denote by $\mathcal{D}_{\text{es-cal}}$.
 Although \citet{efficiency_first_cp} focus on conformal prediction intervals, here we find it easier to explain their ideas in the context of conformal p-values for outlier detection.
 
-Let $\hat{S}_i(Z_{n+1};t)$, for all $i \in \mathcal{D}_{\text{es-cal}}$ and $t \in [T]$, denote the nonconformity scores corresponding to model $t$, and denote the  $\lfloor \alpha(1+|\mathcal{D}_{\text{es-cal}}|) \rfloor\text{-th largest value in }\hat{S}_i(X_{n+1};t)$ as $\hat{Q}_{\alpha}(Z_{n+1};t)$.
+Let $\hat{S}_i(Z_{n+1};t)$, for all $i \in \mathcal{D}_{\text{es-cal}}$ and $t \in [T]$, denote the nonconformity scores corresponding to model $t$, and denote the  $\lfloor \alpha(1+|\mathcal{D}_{\text{es-cal}}|) \rfloor\text{-th smallest value in }\hat{S}_i(X_{n+1};t)$ as $\hat{Q}_{\alpha}(Z_{n+1};t)$.
 Let $t^*$  indicate the selected model.
 As we are interested in constructing a conformal p-value $\hat{u}_0^{\textup{naive}}(Z_{n+1})$, the goal is to bound from above the tail probability
 \begin{align}
@@ -133,7 +132,7 @@ One limitation with this result is that is gives a worst-case correction that do
 This observation motivates the following alternative analysis, which can often give tighter results.
 
 
-\noindent \textbf{Alternative probabilistic bound based on Markov's inequality.}
+\noindent \textbf{Alternative probabilistic bound based on Markov's inequality.}\\
 Define $W_t=\P{\hat{u}_0^{\textup{naive}}(Z_{n+1};t) > \alpha \mid \mathcal{D}_{\text{es-cal}}}$. Lemma~3 in \citet{vovk2012conditional} tells us that $W_t$ follows a Beta distribution, assuming exchangeability among $\mathcal{D}_{\text{es-cal}}$ and the test point. That is,
 \begin{align*}
     W_t \sim \text{Beta}(n_{\text{es-cal}}+1-l, l), \hspace{10pt} l=\lfloor \alpha(n_{\text{es-cal}}+1) \rfloor.
@@ -180,11 +179,11 @@ $$\P{Y_{n+1} \in \hat{C}^{\textup{naive}}_{\alpha}(X_{n+1})} \geq I^{-1}\left(\f
 
 \noindent \textbf{Hybrid probabilistic bound.}
 Since neither the DKW nor the Markov bound described above always dominate the other for all possible combinations of $T$, $n_{\text{es-cal}}$, and $\alpha$, it makes sense to combine them to obtain a uniformly tighter {\em hybrid} bound.
-For any fixed $b>1$ and any $T$, $n_{\text{es-cal}}$, and $\alpha$, define $H(T,n_{\text{es-cal}},\alpha)$ as
+For any fixed $b>1$ and any $T$, $n_{\text{es-cal}}$, and $\alpha$, let $M(T,n_{\text{es-cal}},\alpha) = I^{-1} \left(1/{bT}; n_{\text{es-cal}}+1-l,l \right) \cdot (1-1/b)$ denote the Markov bound and $D(T,n_{\text{es-cal}},\alpha) =\left(1+{1}/(n_{\text{es-cal}})\right)(1-\alpha)-(\sqrt{\log(2T)/2}+c(T))/{\sqrt{n_{\text{es-cal}}}}$ denote the DKW bound, define $H(T,n_{\text{es-cal}},\alpha)$ as
 %Now we compare the DKW bound and Markov bound from the numerical aspect. From Figure~\ref{fig:bound_tn}, we can see that the Markov bound decays slower when the model sizes grows, but the DKW bound performs better when the calibration size $n$ is big enough. This inspires us to combine the two bounds by taking the maximum, formally, we define the new hybrid bound by:
 \begin{align*}
     H(T,n_{\text{es-cal}},\alpha)
-  = \max\left\{ I^{-1} \left(\frac{1}{bT}; n_{\text{es-cal}}+1-l,l \right) \cdot (1-1/b), \left(1+\frac{1}{n_{\text{es-cal}}}\right)(1-\alpha)-\frac{\sqrt{\log(2T)/2}+c(T)}{\sqrt{n_{\text{es-cal}}}} \right\}.
+  = \max\left\{ M(T,n_{\text{es-cal}},\alpha), D(T,n_{\text{es-cal}},\alpha) \right\}.
 \end{align*}
 It then follows immediately from \citet{efficiency_first_cp} and Proposition~\ref{prop:naive-od} that, under the same conditions of Proposition~\ref{prop:naive-od}, for any  fixed $b>1$,
 $$\P{\hat{u}^{\textup{naive}}_0(Z_{n+1}) > \alpha} \geq H(T,n_{\text{es-cal}},\alpha).$$
@@ -212,70 +211,6 @@ Right: theoretically corrected significance level necessary needed to achieve th
 }
     \label{fig:bound_alpha}
 \end{figure}
-
-
-\section{Main Algorithms} \label{app:algorithms}
-
-\begin{algorithm}[H]
-    \caption{Conformalized early stopping for outlier detection}
-    \label{alg:od_full_seq}
-    \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $Z_1, \ldots, Z_n$; test point $Z_{n+1}$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
-        \STATE \textcolor{white}{\textbf{Input}:} One-class classifier trainable via (stochastic) gradient descent.
-        \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
-        \STATE Train the one-class classifier for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
-        \STATE Pick the most promising model $\hat{M}_{\text{ces}}(Z_{n+1})$ according to~\eqref{eq:ces-model}, using the data in $\mathcal{D}_{\text{es-cal}} \cup \{n+1\}$.
-        \STATE Compute nonconformity scores $\hat{S}_i(Z_{n+1})$ for all $i \in \mathcal{D}_{\text{es-cal}} \cup \{n+1\}$ using model $\hat{M}_{\text{ces}}(Z_{n+1})$.
-        \STATE \textbf{Output}: Conformal p-value $\hat{u}_0(Z_{n+1})$ given by \eqref{eq:conformal_pval}.
-    \end{algorithmic}
-\end{algorithm}
-
-\begin{algorithm}[H]
-    \caption{Conformalized early stopping for multi-class classification}
-    \label{alg:class_full_seq}
-    \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with labels $Y_i \in [K]$.
-        \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
-        \STATE \textcolor{white}{\textbf{Input}:} $K$-class classifier trainable via (stochastic) gradient descent.
-        \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
-        \STATE Train the $K$-class classifier for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
-        \FOR{$ y \in [K]$}
-        \STATE Define $\mathcal{D}^y_{\text{es-cal}} = \{i \in \mathcal{D}_{\text{es-cal}} : Y_i = y \}$ and imagine $Y_{n+1}=y$.
-        \STATE Pick the model $\hat{M}_{\text{ces}}(X_{n+1},y)$ according to~\eqref{eq:ces-model-class}, using the data in $\mathcal{D}_{\text{es-cal}} \cup \{n+1\}$.
-        \STATE Compute scores $\hat{S}_i^y(X_{n+1})$ for all $i \in \mathcal{D}^y_{\text{es-cal}} \cup \{n+1\}$ using $\hat{M}_{\text{ces}}(X_{n+1},y)$; see Appendix~\ref{app:class-scores}.
-        \STATE Compute the conformal p-value $\hat{u}_y(X_{n+1})$ according to \eqref{eq:conformal_pval-class}.
-        \ENDFOR
-        \STATE \textbf{Output}: Prediction set $\hat{C}_{\alpha}(X_{n+1})$ given by \eqref{eq:pred-set-class}.
-    \end{algorithmic}
-\end{algorithm}
-
-\begin{algorithm}[H]
-    \caption{Conformalized early stopping for regression}
-    \label{alg:reg}
-    \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
-        \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
-        \STATE \textcolor{white}{\textbf{Input}:} Regression model trainable via (stochastic) gradient descent.
-        \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
-        \STATE Train the regression model for $t^{\text{max}}$ epochs and save the intermediate models $M_{t_1} , \dots, M_{t_T}$.
-        \STATE Evaluate $\hat{M}_{\text{ces}}(X_{n+1},y)$ as in \eqref{eq:reg-step-func}, using Algorithm~\ref{alg:envelope}.
-        \STATE Partition the domain of $Y$ into $L$ intervals $\mathcal{B}_l$, for $l \in [L]$, based on the knots of $\hat{M}_{\text{ces}}(X_{n+1},y)$.
-        \FOR{$ l \in [L]$}
-        \STATE Evaluate nonconformity scores $\hat{S}_i(X_{n+1},\mathcal{B}_l)$ for all $i \in \mathcal{D}_{\text{es-cal}}$ as in \eqref{eq:scores-reg}.
-        \STATE Compute $\hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l)$ as the $\lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil$-th largest value among $\hat{S}_i(X_{n+1},\mathcal{B}_l)$.
- \STATE Construct the interval $\hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l)$ according to~\eqref{eq:reg-int-tmp}.
-%        \STATE Define $\mathcal{D}^y_{\text{es-cal}} = \{i \in \mathcal{D}_{\text{es-cal}} : Y_i = y \}$ and imagine $Y_{n+1}=y$.
-%        \STATE Pick the model $\hat{M}_{\text{ces}}(X_{n+1},y)$ according to~\eqref{eq:ces-model-class}, using the data in $\mathcal{D}_{\text{es-cal}} \cup \{n+1\}$.
-%        \STATE Compute scores $\hat{S}_i(X_{n+1},y)$ for all $i \in \mathcal{D}_{\text{es-cal}} \cup \{n+1\}$ using $\hat{M}_{\text{ces}}(X_{n+1},y)$; see Appendix~\ref{app:class-scores}.
-%        \STATE Compute the conformal p-value $\hat{u}_y(X_{n+1})$ according to \eqref{eq:conformal_pval-class}.
-        \ENDFOR
-        \STATE \textbf{Output}: Prediction interval $\hat{C}_{\alpha}(X_{n+1})$ given as a function of $\{\hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l)\}_{l=1}^{L}$ by \eqref{eq:reg-int}.
-    \end{algorithmic}
-\end{algorithm}
-
 
 
 
@@ -444,154 +379,60 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 \end{corollary}
 
 
-\section{CES for Quantile Regression} \label{sec:quantile-regression}
+% \section{CES for Quantile Regression} \label{sec:quantile-regression}
 
-A limitation of the CES method for regression described in Section~\ref{sec:regression} is that it is not adaptive to heteroscedasticity because it produces prediction intervals with constant length regardless of the input features \cite{romano2019conformalized}.
-However, this limitation can be easily addressed by extending CES to the conformalized quantile regression (CQR) method of \citet{romano2019conformalized}, which is briefly reviewed below.
+% A limitation of the CES method for regression described in Section~\ref{sec:regression} is that it is not adaptive to heteroscedasticity because it produces prediction intervals with constant length regardless of the input features \cite{romano2019conformalized}.
+% However, this limitation can be easily addressed by extending CES to the conformalized quantile regression (CQR) method of \citet{romano2019conformalized}, which is briefly reviewed below.
 
-\subsection{Review of Conformalized Quantile Regression}
+\section{Review of Conformalized Quantile Regression}
+\label{app:cqr_review}
 
 This section reviews the relevant background on conditional quantile regression \cite{koenker1978quantreg} and conformalized quantile regression (CQR) \cite{romano2019conformalized}. 
-In contrast to the classical regression models that estimate the conditional mean of the test response $Y_{n+1}$ given the test feature $X_{n+1} = x$, the quantile regression estimates the conditional quantile $q_\beta$ of $Y_{n+1}$ given $X_{n+1} = x$ defined as
+In contrast to the classical regression models that estimate the conditional mean of the test response $Y_{n+1}$ given the test feature $X_{n+1} = x$, quantile regression estimates the conditional quantile $q_\beta$ of $Y_{n+1}$ given $X_{n+1} = x$, which is defined as
 \begin{align} \label{eq:reg-cond_quantile}
-    q_\beta(x) = \inf\{ y\in \mathbb{R}: \mathbb{P}(Y_{n+1} \leq y |X_{n+1} = x) \geq \beta \}
+    q_\beta(x) = \inf\{ y\in \mathbb{R}: \mathbb{P}(Y_{n+1} \leq y |X_{n+1} = x) \geq \beta \}.
 \end{align}
 This can be formulated as solving the optimization problem: 
 \begin{align} \label{eq:reg-quantile_reg}
-    \hat{q}_\beta(x) = f(x,\hat{\theta}), \quad \hat{\theta} = \argmin_{\theta}\frac{1}{n}\sum_{i=1}^n \rho_\beta(Y_i, f(X_i, \theta))
+    \hat{q}_\beta(x) = f(x,\hat{\theta}), \quad \hat{\theta} = \argmin_{\theta}\frac{1}{n}\sum_{i=1}^n \rho_\beta(Y_i, f(X_i, \theta)),
 \end{align}
-where $f(x,\theta)$ represents the quantile regression function \cite{koenker1978quantreg} and $\rho_\beta$ is the convex ``pinball loss" function \cite{Steinwart2011pinball}, geometrically illustrated in Figure~\ref{fig:pinball_loss} and mathematically defined by
+where $f(x,\theta)$ represents the quantile regression function \cite{koenker1978quantreg} and $\rho_\beta$ is the convex ``pinball loss" function \cite{Steinwart2011pinball}, illustrated in Figure~\ref{fig:pinball_loss} and mathematically defined as
 \begin{align} \label{eq:reg-pinball_loss}
-    \rho_\beta(y, \hat{y}) = \begin{cases}\beta(y - \hat{y}) & \text{if } y - \hat{y} >0, \\
-    (1-\beta)(\hat{y} - y) & \text{otherwise} 
+    \rho_\beta(y, \hat{y}) = 
+  \begin{cases}\beta(y - \hat{y}), & \text{if } y - \hat{y} >0, \\
+    (1-\beta)(\hat{y} - y), & \text{otherwise}.
     \end{cases}
 \end{align}
 
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.4\linewidth]{diagrams/single_pinballloss.pdf}
-    \caption{Visualization of the pinball loss function in~\eqref{eq:reg-pinball_loss}.}
+    \caption{Visualization of the pinball loss function defined in~\eqref{eq:reg-pinball_loss}.}
     \label{fig:pinball_loss}%
 \end{figure}
 
-To construct an efficient prediction interval $\hat{C}(X_{n+1})$ whose length is adaptive to the local variability of $X_{n+1}$ and satisfies the marginal coverage validity, i.e. $\mathbb{P}(Y_{n+1} \in \hat{C}(X_{n+1})) \geq 1-\alpha$ for any $\alpha \in (0,1)$, Yaniv Romano, Evan Patterson, and Emmanuel J. Candès developed CQR that combines conformal inference \cite{vovk1999machine} \cite{vovk2005algorithmic} and conditional quantile regression \cite{koenker1978quantreg}. As in split conformal prediction, firstly the available data is  randomly split into a proper training set, indexed by $\mathcal{I}_1$, and a calibration set, indexed by $\mathcal{I}_2$. Given any quantile regression algorithm $\mathcal{A}$, two conditional quantile functions $\hat{q}_{\alpha_{\text{lo}}}$, $\hat{q}_{\alpha_{\text{hi}}}$ are fitted on $\mathcal{I}_1$, where $\alpha_{\text{lo}} = \alpha/2$ and $\alpha_{\text{hi}} = 1-\alpha/2$: 
+To construct an efficient prediction interval $\hat{C}(X_{n+1})$ whose length is adaptive to the local variability of $X_{n+1}$, CQR operates as follows.
+As in split conformal prediction, firstly the available data are randomly split into a proper training set, indexed by $\mathcal{I}_1$, and a calibration set, indexed by $\mathcal{I}_2$. Given any quantile regression algorithm $\mathcal{A}$, two conditional quantile functions, $\hat{q}_{\alpha_{\text{lo}}}$ and $\hat{q}_{\alpha_{\text{hi}}}$, are fitted on $\mathcal{I}_1$, where $\alpha_{\text{lo}} = \alpha/2$ and $\alpha_{\text{hi}} = 1-\alpha/2$: 
 \begin{align} \label{eq:reg-cond_quantile_fit}
-    \{ \hat{q}_{\alpha_{\text{lo}}}, \hat{q}_{\alpha_{\text{hi}}} \} \leftarrow \mathcal{A}(\{ (X_i, Y_i): i \in \mathcal{I}_1 \})
+    \{ \hat{q}_{\alpha_{\text{lo}}}, \hat{q}_{\alpha_{\text{hi}}} \} \leftarrow \mathcal{A}(\{ (X_i, Y_i): i \in \mathcal{I}_1 \}).
 \end{align}
-In the next step, we compute the conformity scores on the calibration data set $\mathcal{I}_2$ as 
+Then, conformity scores are computed on the calibration data set $\mathcal{I}_2$ as:
 \begin{align} \label{eq:reg-cond_quantile_calib}
-    E_i = \max \{ \hat{q}_{\alpha_{\text{lo}}}(X_i) - Y_i, Y_i - \hat{q}_{\alpha_{\text{hi}}}(X_i) \} \quad \text{ for } i \in \mathcal{I}_2
+    E_i = \max \{ \hat{q}_{\alpha_{\text{lo}}}(X_i) - Y_i, Y_i - \hat{q}_{\alpha_{\text{hi}}}(X_i) \} \quad \text{ for } i \in \mathcal{I}_2.
 \end{align}
-The conformity score designed in Equation~\ref{eq:reg-cond_quantile_calib} accounts for both undercoverage and overcoverage in the following sense: If $Y_i$ is below the lower endpoint of the interval or above the upper endpoint of the interval, then $E_i$ is the magnitude of the undercoverage error. Similarly, if $Y_i$ correctly belongs to the interval, then $E_i$ is non-positive. 
-Finally, CQR constructs the prediction interval for the test response value $Y_{n+1}$ as
+The conformity score in~\eqref{eq:reg-cond_quantile_calib} can account both for possible under-coverage and over-coverage of the quantile regression model~\cite{romano2019conformalized}. If $Y_i$ is outside the interval $[\hat{q}_{\alpha_{\text{lo}}}(X_i), \hat{q}_{\alpha_{\text{hi}}}(X_i)]$, then $E_i$ is the (positive) distance of $Y_i$ from the closest endpoint of the interval.
+Otherwise, if $Y_i$ is inside the interval $[\hat{q}_{\alpha_{\text{lo}}}(X_i), \hat{q}_{\alpha_{\text{hi}}}(X_i)]$, then $E_i$ is the negative of the distance of $Y_i$ from the closest endpoint of the interval.
+Therefore, if the quantile regression model is well-calibrated, approximately 90\% of the calibration data points should have $E_i \leq 0$~\cite{romano2019conformalized}.
+Finally, CQR constructs the prediction interval for the test response value $Y_{n+1}$ through
 \begin{align} \label{eq:reg-cond_quantile_construct_pi}
-    \hat{C}(X_{n+1}) = [ \hat{q}_{\alpha_{\text{lo}}}(X_{n+1}) - Q_{1-\alpha}(E, \mathcal{I}_2), \hat{q}_{\alpha_{\text{hi}}}(X_{n+1}) + Q_{1-\alpha}(E, \mathcal{I}_2)
-    ]
+    \hat{C}(X_{n+1}) = [ \hat{q}_{\alpha_{\text{lo}}}(X_{n+1}) - \hat{Q}_{1-\alpha}(E, \mathcal{I}_2), \hat{q}_{\alpha_{\text{hi}}}(X_{n+1}) + \hat{Q}_{1-\alpha}(E, \mathcal{I}_2)    ],
 \end{align}
-where $Q_{1-\alpha}(E, \mathcal{I}_2)$ is the $(1-\alpha)(1+\frac{1}{|\mathcal{I}_2|})$-th empirical quantile of $\{E_i: i\in \mathcal{I}_2\}$
+where $\hat{Q}_{1-\alpha}(E, \mathcal{I}_2)$ is the $(1-\alpha)(1+1/|\mathcal{I}_2|)$-th empirical quantile of $\{E_i: i\in \mathcal{I}_2\}$.
 
 
-\subsection{CES for Quantile Regression}
+\section{Avoiding Empty Predictions for Regression with CQR} \label{app:reg-noempty-quantile}
 
-As in the previous section, consider a data set containing $n$ exchangeable observations $(X_i,Y_i)$, for $i \in \mathcal{D} = [n]$, and a test point $(X_{n+1}, Y_{n+1})$ with a latent label $Y_{n+1} \in \mathbb{R}$. 
-First, the data in $\mathcal{D}$ are randomly split into two subsets, $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$. The data in $\mathcal{D}_{\text{train}}$ are utilized to train a neural network quantile regression model \cite{taylor2000quantile} by seeking to minimize the pinball loss instead of the squared error loss, for each target level $\beta=\beta_{\text{low}}$ and $\beta=\beta_{\text{high}}$ (e.g., $\beta_{\text{low}} = \alpha/2$ and $\beta_{\text{high}}=1-\alpha/2$). Note that the same neural network, with two separate output nodes, can be utilized to estimate conditional quantiles at two different levels; e.g., as in \citet{romano2019conformalized}.
-For any $t \in [t^{\text{max}}]$, let $M_{\beta, t}$ denote the intermediate neural network model stored after $t$ epochs of stochastic gradient descent, following the same notation as in Section~\ref{sec:regression}.
-For each target level $\beta$ and any $x \in \mathcal{X}$, let $\hat{q}_{\beta, t}(x)$ denote the approximate $\beta-$th conditional quantile of the unknown conditional distribution of $Y \mid X=x$ estimated by $M_{\beta, t}$.
-
-
-Similarly to Section~\ref{sec:regression}, for any model $M_{\beta, t}$ and any $x \in \mathcal{X}$, $y \in \mathbb{R}$, define the augmented loss evaluated on the calibration data including also a dummy test point $(x,y)$ as:
-\begin{align}\label{eq:loss-ces-reg-cqr}
-  \begin{split}
-    \mathcal{L}_{\text{es-cal}}^{+1}(M_{\beta, t},x,y)
-    & = \mathcal{L}_{\text{es-cal}}(M_{\beta, t}) + \mathcal{L}(M_{\beta, t}, x, y) \\
-    & = \sum_{i \in \mathcal{D}_{\text{es-cal}}} \rho_\beta(Y_i, \hat{q}_{\beta, t}(X_i)) + \rho_\beta(y, \hat{q}_{\beta, t}(x)),
-  \end{split}
-\end{align}
-where $\rho_\beta$ denotes the pinball loss function defined in~\eqref{eq:reg-pinball_loss}.
-For any model $M_{\beta, t}$, the augmented loss is equal to a constant plus a convex function of $y$, namely $\rho_\beta(y, \hat{q}_{\beta, t}(x))$.
-Therefore, for any fixed $x$, the quantity in~\eqref{eq:loss-ces-reg-cqr} can be sketched as a function of $M_{\beta, t}$ and $y$ as shown in Figure~\ref{fig:pinball_losses}. This is analogous to Figure~\ref{fig:quadratic_losses} from Section~\ref{sec:regression}, with the difference that now the quadratic functions have been replaced by piece-wise linear ``pinball'' functions.
-
-
-\begin{figure}[!htb]
-    \centering
-    \includegraphics[width=0.6\linewidth]{diagrams/pinball_losses.pdf}
-    \caption{Pinball loss functions on test-augmented hold-out data for three alternative regression models, $M_1, M_2$ and $M_3$, as a function of the place-holder outcome $y$ for the test point. The CES method utilizes the best model for each possible value of $y$, which is identified by the lower envelope of these three pinball loss functions. In this case, the lower envelope has a single finite knot at $k_{2}$.}
-    \label{fig:pinball_losses}%
-\end{figure}
-
-
-After pre-training and storing $T$ candidate models, namely $M_{\beta,t_1}, \ldots, M_{\beta,t_T}$ for some sub-sequence $(t_1, \ldots, t_T)$ of $[t^{\text{max}}]$, consider the following optimization problem,
-\begin{align} \label{eq:ces-model-reg-cqr}
-  \hat{M}_{\beta, \text{ces}}(X_{n+1},y) = \argmin_{M_{\beta, t_j} \, : \, 1 \leq j \leq T} \mathcal{L}_{\text{es-cal}}^{+1}(M_{\beta, t_j},X_{n+1},y).
-\end{align}
-This problem is equivalent to identifying the lower envelope of a family of shifted pinball loss functions, similarly to Section~\ref{sec:regression}; see Figure~\ref{fig:pinball_losses} for a schematic visualization.
-Again, this  lower envelope can be found at computational cost $\mathcal{O}(T \log T)$, with the same divide-and-conquer algorithm described in Appendix~\ref{app:lower-envelope}.
-In particular, $\hat{M}_{\beta, \text{ces}}(X_{n+1},y)$ is a step function with respect to $y$ with $L$ distinct steps, for some $L = \mathcal{O}(T \log T)$, and it can be written as:
-\begin{align} \label{eq:reg-step-func-cqr}
- \hat{M}_{\beta, \text{ces}}(X_{n+1},y) = \sum_{l=1}^{L} m_{\beta, l}(X_{n+1}) \I{y \in (k^{\beta}_{l-1}, k^{\beta}_{l}] },
-\end{align}
-where $m_{\beta, l}(X_{n+1}) \in [T]$ represents the best model selected within the interval $(k^{\beta}_{l-1}, k^{\beta}_{l}]$ such that $m_{\beta,l}(X_{n+1}) \neq m_{\beta, l-1}(X_{n+1})$ for all $l \in [L]$.
-Above, $k^{\beta}_{1}\leq k^{\beta}_{2} \leq \dots \leq k^{\beta}_{L}$ denote the {\em knots} of $\hat{M}_{\beta, \text{ces}}(X_{n+1},y)$, which also depend on $X_{n+1}$ and are defined as the boundaries in the domain of $y$ between each consecutive pair of steps, with the understanding that $k^{\beta}_0 = -\infty$ and $k^{\beta}_{L+1} = +\infty$; see Figure~\ref{fig:pinball_losses} for a schematic visualization.
-
-After computing $\hat{M}_{\beta, \text{ces}}(X_{n+1},y)$ in~\eqref{eq:ces-model-reg-cqr} for both  $\beta_{\text{low}}$ and $\beta_{\text{high}}$, we concatenate the respective knots $k_1^{\text{low}}, \dots, k^{\text{low}}_{L_1}, k_1^{\text{high}}, \dots, k_{L_2}^{\text{high}}$ and sort them into $k_1 \leq k_2 \leq k_{L_1+L_2}$, so that within each interval $\mathcal{B}_l = (k_{l-1}, k_{l}]$ for step $l \in [L_1 + L_2]$, there exist exactly one best model for $\beta_{\text{low}}$ and exactly one best model for $\beta_{\text{high}}$. 
-Then, for each interval $\mathcal{B}_l = (k_{l-1}, k_{l}]$ associated with step $l \in[L_1 + L_2]$, evaluate the nonconformity score $\hat{E}_i(X_{n+1}, \mathcal{B}_l)$ for all $i \in \mathcal{D}_{\text{es-cal}}$, based on the regression model indicated by $m_{\beta_{\text{low}},l}(X_{n+1})$ and $m_{\beta_{\text{high}},l}(X_{n+1})$; i.e.,
-\begin{align} \label{eq:scores-reg-cqr}
-  \hat{E}_i(X_{n+1}, \mathcal{B}_l) = \max\left\{\hat{q}_{m_{\beta_{\text{low}},l}(X_{n+1})}(X_i) - Y_i, Y_i - \hat{q}_{m_{\beta_{\text{high}},l}(X_{n+1})}(X_i)\right\}.
-\end{align}
-
-
-Let $\hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l)$ denote the $\lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil$-th smallest value among all nonconformity scores $\hat{E}_i(X_{n+1},\mathcal{B}_l)$, assuming for simplicity that there are no ties; otherwise, ties can be broken at random. 
-Then, define the interval $\hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l)$ as that obtained by applying the conformal prediction method of \citet{romano2019conformalized} with nonconformity scores~\eqref{eq:scores-reg-cqr} based on the estimated conditional quantiles $\hat{q}_{m_{\beta_{\text{low}},l}(X_{n+1})}(X_{n+1})$ and $\hat{q}_{m_{\beta_{\text{high}},l}(X_{n+1})}(X_{n+1})$; that is,
-\begin{align} \label{eq:reg-int-tmp-cqr}
-  \hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l) = [\hat{q}_{m_{\beta_{\text{low}},l}(X_{n+1})}(X_{n+1}) - \hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l), \hat{q}_{m_{\beta_{\text{high}},l}(X_{n+1})}(X_{n+1}) + \hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l)].
-\end{align}
-Finally, the output prediction interval $\hat{C}_{\alpha}(X_{n+1})$ is given by:
-\begin{align} \label{eq:reg-int-cqr}
-  \hat{C}_{\alpha}(X_{n+1}) = \text{Convex}\left( \cup_{l=1}^{L} \{ \mathcal{B}_l \cap \hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l) \} \right),
-\end{align}
-where $\text{Convex}(\cdot)$ denotes the convex hull of a set.
-This procedure is summarized in Algorithm~\ref{alg:reg-cqr} and it is guaranteed to produce prediction sets with valid marginal coverage.
-
-\begin{algorithm}[H]
-    \caption{Conformalized early stopping for quantile regression}
-    \label{alg:reg-cqr}
-    \begin{algorithmic}[1]
-        \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
-        \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
-        \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
-        \STATE \textcolor{white}{\textbf{Input}:} Quantile regression model trainable via (stochastic) gradient descent. Target quantiles [$\beta_{\text{low}}$, $\beta_{\text{high}}$].
-        \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
-        \STATE Train for $t^{\text{max}}$ epochs and save the intermediate models $M_{\beta_{\text{low}}, t_1} , \dots, M_{\beta_{\text{low}}, t_T}$, $M_{\beta_{\text{high}}, t_1} , \dots, M_{\beta_{\text{high}}, t_T}$.
-        \STATE Evaluate $\hat{M}_{\beta_{\text{low}},\text{ces}}(X_{n+1},y)$ and $\hat{M}_{\beta_{\text{high}},\text{ces}}(X_{n+1},y)$ as in \eqref{eq:reg-step-func-cqr}, using Algorithm~\ref{alg:envelope-cqr}.
-        \STATE Partition the domain of $Y$ into $L_1+L_2$ intervals $\mathcal{B}_l$, for $l \in [L_1+L_2]$, based on the knots of $\hat{M}_{\beta_{\text{low}},\text{ces}}(X_{n+1},y)$ and $\hat{M}_{\beta_{\text{high}},\text{ces}}(X_{n+1},y)$.
-        \FOR{$ l \in [L_1+ L_2]$}
-        \STATE Evaluate nonconformity scores $\hat{E}_i(X_{n+1},\mathcal{B}_l)$ for all $i \in \mathcal{D}_{\text{es-cal}}$ as in \eqref{eq:scores-reg-cqr}.
-        \STATE Compute $\hat{Q}_{1-\alpha}(X_{n+1},\mathcal{B}_l)$ as the $\lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil$-th largest value among $\hat{E}_i(X_{n+1},\mathcal{B}_l)$.
- \STATE Construct the interval $\hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l)$ according to~\eqref{eq:reg-int-tmp-cqr}.
-%        \STATE Define $\mathcal{D}^y_{\text{es-cal}} = \{i \in \mathcal{D}_{\text{es-cal}} : Y_i = y \}$ and imagine $Y_{n+1}=y$.
-%        \STATE Pick the model $\hat{M}_{\text{ces}}(X_{n+1},y)$ according to~\eqref{eq:ces-model-class}, using the data in $\mathcal{D}_{\text{es-cal}} \cup \{n+1\}$.
-%        \STATE Compute scores $\hat{S}_i(X_{n+1},y)$ for all $i \in \mathcal{D}_{\text{es-cal}} \cup \{n+1\}$ using $\hat{M}_{\text{ces}}(X_{n+1},y)$; see Appendix~\ref{app:class-scores}.
-%        \STATE Compute the conformal p-value $\hat{u}_y(X_{n+1})$ according to \eqref{eq:conformal_pval-class}.
-        \ENDFOR
-        \STATE \textbf{Output}: Prediction interval $\hat{C}_{\alpha}(X_{n+1})$ given as a function of $\{\hat{C}_{\alpha}(X_{n+1}, \mathcal{B}_l)\}_{l=1}^{L}$ by \eqref{eq:reg-int-cqr}.
-    \end{algorithmic}
-\end{algorithm}
-
-
-\addtocounter{theorem}{1}
-\begin{theorem} \label{thm:reg-cqr}
-Assume $(X_{1},Y_{1}), \ldots, (X_{n+1},Y_{n+1})$ are exchangeable, and let $\hat{C}_{\alpha}(X_{n+1})$ be the output of Algorithm~\ref{alg:reg-cqr}, as given by~\eqref{eq:reg-int-cqr}, for any given $\alpha \in (0,1)$.
-Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
-\end{theorem}
-
-
-
-
-\subsection{Avoiding Empty Predictions} \label{app:reg-noempty-quantile}
-
-Similarly to Section~\ref{sec:regression}, it is possible (although unlikely) that Algorithm~\ref{alg:reg-cqr} may sometimes produce an empty prediction set.
-Therefore, we presents Algorithm~\ref{alg:reg-noempty-cqr}, which extends Algorithm~\ref{alg:reg-cqr} in such a way as to explicitly avoid returning empty prediction intervals.
-As the intervals given by Algorithm~\ref{alg:reg-noempty-cqr} always contain those output by Algorithm~\ref{alg:reg-cqr}, it follows from Theorem~\ref{thm:reg-cqr} that Algorithm~\ref{alg:reg-noempty-cqr} also enjoys guaranteed coverage; see Corollary~\ref{thm:reg-noempty-cqr}.
+In this section, we introduce Algorithm~\ref{alg:reg-noempty-cqr} as an extension of Algorithm~\ref{alg:reg-cqr} in the main text to address the rare possibility of generating empty prediction sets. Algorithm~\ref{alg:reg-noempty-cqr} ensures that the intervals it produces are always non-empty, while still encompassing the intervals obtained from Algorithm~\ref{alg:reg-cqr}. Consequently, Algorithm~\ref{alg:reg-noempty-cqr} maintains the guaranteed coverage provided by Theorem~\ref{thm:reg-cqr}, as indicated in Corollary~\ref{thm:reg-noempty-cqr}.
 
 \begin{algorithm}[H]
     \caption{Conformalized early stopping for quantile regression, avoiding empty predictions}
@@ -600,7 +441,7 @@ As the intervals given by Algorithm~\ref{alg:reg-noempty-cqr} always contain tho
         \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
         \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
-        \STATE \textcolor{white}{\textbf{Input}:} Quantile regression model trainable via (stochastic) gradient descent. Target quantiles [$\beta_{\text{low}}, \beta_{\text{high}}$].
+        \STATE \textcolor{white}{\textbf{Input}:} Trainable quantile regression model with target quantiles [$\beta_{\text{low}}, \beta_{\text{high}}$].
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
         \STATE Train for $t^{\text{max}}$ epochs and save the intermediate models $M_{\beta_{\text{low}}, t_1} , \dots, M_{\beta_{\text{low}}, t_T}$, $M_{\beta_{\text{high}}, t_1} , \dots, M_{\beta_{\text{high}}, t_T}$.
         \STATE Evaluate $\hat{C}_{\alpha}(X_{n+1})$ using Algorithm~\ref{alg:reg-cqr}.
@@ -626,15 +467,14 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
         \STATE \textbf{Input}: Exchangeable data points $(X_{1},Y_{1}), \ldots, (X_{n},Y_{n})$ with outcomes $Y_i \in \mathbb{R}$.
         \STATE \textcolor{white}{\textbf{Input}:} Test point with features $X_{n+1}$. Desired coverage level $1-\alpha$.
         \STATE \textcolor{white}{\textbf{Input}:} Maximum number of training epochs $t^{\text{max}}$; storage period hyper-parameter $\tau$.
-        \STATE \textcolor{white}{\textbf{Input}:} Quantile regression model trainable via (stochastic) gradient descent minimizing the pinball loss. 
-        \STATE \textcolor{white}{\textbf{Input}:} Target quantiles [$\beta_{\text{low}}, \beta_{\text{high}}$]. 
+        \STATE \textcolor{white}{\textbf{Input}:} Trainable quantile regression model with target quantiles [$\beta_{\text{low}}, \beta_{\text{high}}$]. 
         \STATE Randomly split the exchangeable data points into $\mathcal{D}_{\text{train}}$ and $\mathcal{D}_{\text{es-cal}}$.
         \STATE Train for $t^{\text{max}}$ epochs and save the intermediate models $M_{\beta_{\text{low}},t_1} , \dots, M_{\beta_{\text{low}}t_T}$,  $M_{\beta_{\text{high}},t_1} , \dots, M_{\beta_{\text{high}}t_T}$.
         \STATE Pick the most promising models $t^*_{\text{low}}, t^*_{\text{high}}\in [T]$ minimizing $\mathcal{L}_{\text{es-cal}}(M_t)$ in \eqref{eq:loss-ces-reg-cqr}.
-        \STATE Evaluate nonconformity scores $\hat{E}_i(X_{n+1}) = \max\{\hat{q}_{t^*_{\text{low}}}(X_i) - Y_i, Y_i -\hat{q}_{t^*_{\text{high}}}(X_i)\}$ for all $i \in \mathcal{D}_{\text{es-cal}}$.
-        \STATE Compute $\hat{Q}_{1-\alpha}(X_{n+1}) = \lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil\text{-th largest value in }
+        \STATE Evaluate the scores $\hat{E}_i(X_{n+1}) = \max\{\hat{q}_{t^*_{\text{low}}}(X_i) - Y_i, Y_i -\hat{q}_{t^*_{\text{high}}}(X_i)\}$ for all $i \in \mathcal{D}_{\text{es-cal}}$.
+        \STATE Compute $\hat{Q}_{1-\alpha}(X_{n+1}) = \lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil\text{-th smallest value in }
         \hat{E}_i(X_{n+1})$ for $i \in \mathcal{D}_{\text{es-cal}}$.
-        \STATE \textbf{Output}: Naive prediction interval $\hat{C}^{\text{naive}}_{\alpha}(X_{n+1}) = [\hat{q}_{t^*_{\text{low}}}(X_{n+1}) - \hat{Q}_{1-\alpha}(X_{n+1}), \hat{q}_{t^*_{\text{high}}}(X_{n+1}) + \hat{Q}_{1-\alpha}(X_{n+1})]$.
+        \STATE \textbf{Output}: $\hat{C}^{\text{naive}}_{\alpha}(X_{n+1}) = [\hat{q}_{t^*_{\text{low}}}(X_{n+1}) - \hat{Q}_{1-\alpha}(X_{n+1}), \hat{q}_{t^*_{\text{high}}}(X_{n+1}) + \hat{Q}_{1-\alpha}(X_{n+1})]$.
     \end{algorithmic}
 \end{algorithm}
 
@@ -642,7 +482,28 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 
 \section{Additional Results from Numerical Experiments} \label{app:numerical-results}
 
-\subsection{Outlier Detection, Classification, and Regression}
+\subsection{Outlier Detection}
+
+\begin{table}[!htb]
+\centering
+    \caption{Performance of outlier detection based on classification models trained with different methods, on the {\em CIFAR10} data set~\cite{cifar10}. Other details are as in Figure~\ref{fig:exp_oc}. The numbers in parenthesis indicate standard errors. The numbers in bold highlight TPR values within 1 standard error of the best TPR across all methods, for each sample size.}
+  \label{tab:exp_oc}
+  \input{tables/exp_oc.tex}
+\end{table}
+
+\FloatBarrier
+
+\subsection{Multi-class Classification}
+
+\begin{table}[!htb]
+\centering
+    \caption{Performance of multi-class classification based on classification models trained with different methods, on the {\em CIFAR10} data set~\cite{cifar10}. Other details are as in Figure~\ref{fig:exp_mc}. The numbers in parenthesis indicate standard errors. The numbers in bold highlight cardinality values within 1 standard error of the best cardinality across all methods, for each sample size.}
+  \label{tab:exp_mc}
+  \input{tables/exp_mc.tex}
+\end{table}
+
+\FloatBarrier
+\subsection{Regression}
 
 \begin{figure}[!htb]
     \centering
@@ -657,23 +518,6 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
     \caption{Performance of conformal prediction intervals based on regression models trained with different methods, on the {\em concrete} data set~\cite{data-concrete}. The results are shown as a function of the total sample size. The nominal marginal coverage level is 90\%. See Table~\ref{tab:exp_regression_concrete} for additional details and standard errors.}
     \label{fig:exp_regression_concrete}
 \end{figure}
-
-
-
-\begin{table}[!htb]
-\centering
-    \caption{Performance of outlier detection based on classification models trained with different methods, on the {\em CIFAR10} data set~\cite{cifar10}. Other details are as in Figure~\ref{fig:exp_oc}. The numbers in parenthesis indicate standard errors. The numbers in bold highlight TPR values within 1 standard error of the best TPR across all methods, for each sample size.}
-  \label{tab:exp_oc}
-  \input{tables/exp_oc.tex}
-\end{table}
-
-\begin{table}[!htb]
-\centering
-    \caption{Performance of multi-class classification based on classification models trained with different methods, on the {\em CIFAR10} data set~\cite{cifar10}. Other details are as in Figure~\ref{fig:exp_mc}. The numbers in parenthesis indicate standard errors. The numbers in bold highlight cardinality values within 1 standard error of the best cardinality across all methods, for each sample size.}
-  \label{tab:exp_mc}
-  \input{tables/exp_mc.tex}
-\end{table}
-
 
 \begin{table}[!htb]
 \centering
@@ -697,31 +541,8 @@ Then, $\mathbb{P}[Y_{n+1} \in \hat{C}_{\alpha}(X_{n+1})] \geq 1-\alpha$.
 \end{table}
 
 
-
-
 \FloatBarrier
-
-\subsection{Quantile Regression} \label{app:numerical-results-cqr}
-
-We apply the CES quantile regression method extensively to the following publicly available and commonly investigated regression data sets from the UCI Machine Learning repository \cite{Pinar2012}: medical expenditure panel survey number 21 ({\em MEPS\_21}) \cite{meps_21}; blog feedback ({\em blog\_data}) \cite{blog_data}; Tennessee’s student teacher achievement ratio ({\em STAR}) \cite{star}; community and crimes ({\em community}) \cite{community}; physicochemical properties of protein tertiary structure ({\em bio})~\cite{data-bio}; house sales in King County ({\em homes}) \cite{homes}; and hourly and daily counts of rental bikes ({\em bike})~\cite{data-bike}. These data sets were previously also considered by \citet{romano2019conformalized}.
-
-As in the previous sections, we compare CES to the usual three benchmarks, now implemented based on quantile regression: naive early stopping with the {\em hybrid} theoretical correction for the nominal coverage level, early stopping based on data splitting and full model training without early stopping. We follow the same model architecture and data preprocessing steps as in \citet{romano2019conformalized}. To be specific, the input features are standardized to have zero mean and unit variance, and the response values are rescaled by diving the absolute mean of the training responses. All methods utilize the same neural network with three hidden layers and ReLU activation functions between layers, trained for up to 2000 epochs. The parameters are trained minimizing the pinball loss function~\ref{eq:reg-quantile_reg} with Adam optimizer \cite{kingma2014adam}, minibatches of size 25, 0 weight decay and dropout, and fixed learning rate (0.001 for {\em STAR, homes, bike, and bio}, 0.0001 for {\em community}, and 0.00005 for {\em MEPS\_21 and blog\_data}). 
-
-The models are calibrated in such a way as to produce conformal prediction sets with guaranteed 90\% marginal coverage for a test set of 1000 independent data points. The total sample size available for training, early stopping and calibration is varied between 200 and 2000 (200 and 1000 for small data sets such as {\em community} and {\em STAR}).
-These data are allocated for specific training, early-stopping, and calibration operations as in Sections~\ref{sec:num_od}--\ref{sec:num_mc}.
-Again, the performance of each method is measured in terms of marginal coverage, worst-slab conditional coverage~\cite{cauchois2020knowing}, and average width of the prediction intervals. All results are averaged over 25 independent experiments, each based on a different random sample from the original raw data sets.
-
-
-Figure~\ref{fig:exp_qt_regression_homes} summarizes the performance of the four alternative methods on the {\em homes} data, as a function of the total sample size; The error bar corresponding to standard errors are plotted around each data point. These results show that all methods reach 90\% marginal coverage in practice, as anticipated by the mathematical guarantees, although the theoretical correction for the naive early stopping method appears to be overly conservative. Full training, though producing the smallest prediction bands, has very low conditional coverage, which indicates that fully trained neural network models can suffer from overfitting and therefore is not appealing. Data splitting method beats full training as it gives higher approximated conditional coverage, and CES further beats data splitting in terms of conditional coverage, meanwhile producing prediction intervals of similar length as data splitting. These patterns hold true in general for additional data sets, as illustrated by Figures~\ref{fig:exp_qt_regression_community}--\ref{fig:exp_qt_regression_bike} and by Tables~\ref{tab:exp_qt_regression_homes_tab}--\ref{tab:exp_qt_regression_bike_tab}.
-Tables~\ref{tab:exp_qt_regression_homes_tab}--\ref{tab:exp_qt_regression_bike_tab} also include the results obtained with the naive benchmark applied without the necessary theoretical correction, which performs similarly to CES.
-
-
-\begin{figure}[!htb]
-    \centering
-    \includegraphics[width=0.8\linewidth]{figures/exp_qt_regression_homes.pdf}\vspace{-0.5cm}
-    \caption{Average performance, as a function of the sample size, of conformal prediction sets for quantile regression based on neural networks trained and calibrated with different methods, on the {\em homes} data~\cite{homes}. The marginal coverage is theoretically guaranteed to be above 90\%. Ideally, the conditional coverage should high and the prediction intervals should be tight. See Table~\ref{tab:exp_qt_regression_homes_tab} for additional details and standard errors.}
-    \label{fig:exp_qt_regression_homes}
-\end{figure}
+\subsection{Quantile Regression}
 
 
 \begin{figure}[!htb]
@@ -857,7 +678,7 @@ However, this oracle is useful because it is easier to analyze, and it suffices 
 The coverage property for the oracle can be established using an approach similar to that of the proof of Theorem~\ref{thm:od_full}, setting $Z_i=(X_i,Y_i)$ for all $i \in \{n+1\} \cup \mathcal{D}_{\text{es-cal}}$.
 In fact, the maximum number of epochs $t^{\text{max}}$ is fixed, the sequence of saved models is invariant to permutations of $\{n+1\} \cup \mathcal{D}_{\text{es-cal}}$, and the  model $\hat{M}_{\text{ces}}$ selected by the oracle according to \eqref{eq:reg-step-func} is also invariant.
 Thus, it follows that the oracle nonconformity scores $\hat{S}_i^* = \hat{S}_i(X_{n+1}, \mathcal{B}_{l^*(Y_{n+1})})$ are exchangeable with one another for all $i \in \{n+1\} \cup \mathcal{D}_{\text{es-cal}}$.
-Further, by construction of the prediction intervals~\eqref{eq:reg-int-tmp}, we know that the miscoverage event $Y_{n+1} \not\in \hat{C}^{\text{oracle}}_{\alpha}(X_{n+1})$ occurs if and only if $\hat{S}^*_i > \hat{Q}^*_{1-\alpha}$, where $\hat{Q}^*_{1-\alpha}$ is the $\lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil$-th largest value among all nonconformity scores $\hat{S}_i(X_{n+1},\mathcal{B}_l)$.
+Further, by construction of the prediction intervals~\eqref{eq:reg-int-tmp}, we know that the miscoverage event $Y_{n+1} \not\in \hat{C}^{\text{oracle}}_{\alpha}(X_{n+1})$ occurs if and only if $\hat{S}^*_i > \hat{Q}^*_{1-\alpha}$, where $\hat{Q}^*_{1-\alpha}$ is the $\lceil (1-\alpha)(1+|\mathcal{D}_{\text{es-cal}}|) \rceil$-th smallest value among all nonconformity scores $\hat{S}_i(X_{n+1},\mathcal{B}_l)$.
 However, it is a well-known exchangeability result that $\mathbb{P}[\hat{S}^*_i \leq \hat{Q}^*_{1-\alpha}] \geq 1-\alpha$; see for example Lemma 1 in \citet{romano2019conformalized}.
 \end{proof}
 
@@ -931,5 +752,5 @@ where the second equality is obtained by substituting $c$ and $d$ with their def
 
 %%% Local Variables:
 %%% mode: latex
-%%% TeX-master: "main"
+%%% TeX-master: "main_arxiv"
 %%% End:

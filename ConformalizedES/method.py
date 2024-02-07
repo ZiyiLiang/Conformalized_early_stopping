@@ -39,7 +39,6 @@ class ConformalizedES:
             print("n_epochs=", self.max_epoch)
             print("learning_rate=", self.learning_rate)
             print("=" * 30)
-
     def train_single_epoch(self,epoch):
         """
         Train the model for a single epoch
@@ -67,6 +66,9 @@ class ConformalizedES:
             # forward + backward + optimize
             outputs = self.net(inputs)
             loss = self.criterion(outputs, inputs, targets)
+            if isinstance(loss, list):
+              loss = loss[0]
+
             loss.backward()
             self.optimizer.step()
 
@@ -103,7 +105,6 @@ class ConformalizedES:
 
         return (avg_train_loss, avg_train_acc) if self.acc else avg_train_loss
 
-
     def full_train(self, save_dir = './models', save_every = 1):
         pathlib.Path(save_dir).mkdir(parents=True, exist_ok=True)
 
@@ -111,6 +112,7 @@ class ConformalizedES:
         self.train_loss_history = []
         self.val_loss_history = []
         self.total_val_loss_history = []
+        self.sep_val_loss_history = {}
 
         if self.acc:
             self.train_acc_history = []
@@ -138,13 +140,25 @@ class ConformalizedES:
 
             # Evaluate the loss and accuracy on the validation set
             total_val_loss = 0
+            sep_val_loss = {}
+
             if self.acc:
                 total_val_acc = 0
 
             self.net.eval()
             for inputs, targets in self.val_loader:
                 val_loss = self.get_loss(inputs, targets)
-                total_val_loss += val_loss.item()
+
+                if isinstance(val_loss, list):
+                  total_val_loss += val_loss[0].item()
+                  def sum_dict(d1, d2):
+                    for key, value in d1.items():
+                      d1[key] = value + d2.get(key, 0)
+                    return d1  
+                  sep_val_loss = sum_dict(val_loss[1], sep_val_loss)
+
+                else:
+                  total_val_loss += val_loss.item()
 
                 if self.acc:
                     val_acc = self.get_acc(inputs, targets)
@@ -154,6 +168,13 @@ class ConformalizedES:
             avg_val_loss = total_val_loss / (len(targets) * len(self.val_loader))
             self.val_loss_history.append(avg_val_loss)
             self.total_val_loss_history.append(total_val_loss)
+
+            for q, v in sep_val_loss.items(): 
+              if q in self.sep_val_loss_history: 
+                self.sep_val_loss_history[q].append(v.item())
+              else:
+                self.sep_val_loss_history[q] = [v.item()]
+            
 
 
             if self.acc:
@@ -166,11 +187,13 @@ class ConformalizedES:
                 else:
                     print("val_loss = {:.2f}".format(avg_val_loss))
                 print('Snapshot saved at epoch {}.'.format(saving_epoch + 1))
+        
+        
         if self.verbose:
             print('Training done! A list of {} models saved.'.format(len(self.model_list)))
 
         return None
-
+    
     def get_acc(self, inputs, targets):
         self.net.eval()
         inputs, targets = inputs.to(self.device), targets.to(self.device)
@@ -188,6 +211,10 @@ class ConformalizedES:
         with th.no_grad():
             outputs = self.net(inputs)
             loss = self.criterion(outputs, inputs, targets)
+
+            if isinstance(loss, list):
+              loss[1].update((x, y*len(targets)) for x, y in loss[1].items())
+              return [loss[0] * len(targets), loss[1]]
 
         # NOTE. Careful: the variable loss is the loss averaged over all data points in the batch
         # However, we need the total loss, not the average
@@ -307,12 +334,12 @@ class CES_multiClass(ConformalizedES):
         return best_loss, best_model, test_val_loss_history
 
 
-
 class CES_regression(ConformalizedES):
     def __init__(self, net, device, train_loader, batch_size, max_epoch, learning_rate, criterion, optimizer,
                 val_loader, verbose=True, progress = True):
         super().__init__(net, device, train_loader, batch_size, max_epoch, learning_rate, criterion, optimizer,
                          val_loader, verbose, progress)
+        
 
 
     def define_parabolas(self, test_inputs):
@@ -345,14 +372,57 @@ class CES_regression(ConformalizedES):
             modidx_params[model_path] = param
 
         return modidx_params
+      
+      
+    def define_pinball(self, test_inputs):
+        """Return a dictionary of paths and the pinball loss functions (characterized by parameters of pinball loss functions)
+        Args:
+            test_inputs (tensor): test covariates
+
+        Returns:
+            Dictionaries that contains information of the model path and loss function:
+            format of the output (Example): {"model_1_path":(a1, b1, c1), "model_2_path":(a2, b2, c2), ...},
+        """
+        assert self.model_list
+        assert test_inputs is not None 
+        
+        # Store loss functions for each model
+        modidx_params_lower = {}
+        modidx_params_higher = {}
+
+        for model_idx, model_path in enumerate(self.model_list):
+            self.net.load_state_dict(th.load(model_path))
+            # Get the total validation loss of each model
+            assert len(self.net.quantiles)==2, "quantile length mismatch, input two quantiles only"
+            val_loss_lower = self.sep_val_loss_history[self.net.quantiles[0]][model_idx]
+            val_loss_higher = self.sep_val_loss_history[self.net.quantiles[1]][model_idx]    
+            ## predictions using a list of quantiles
+            pred_lower = self.predict(test_inputs)[0][0]
+            pred_higher = self.predict(test_inputs)[0][1]
+            param_lower = (val_loss_lower, pred_lower, self.net.quantiles[0])
+            param_higher = (val_loss_higher, pred_higher, self.net.quantiles[1])
+            modidx_params_lower[model_path] = param_lower
+            modidx_params_higher[model_path] = param_higher
+
+        return [modidx_params_lower, modidx_params_higher]
+    
 
 
     def eval_parabola(self, x, params):
         a, b, c = params
-        return a*x**2+b*x+c
+        parabola_loss = a*x**2+b*x+c
+        return parabola_loss
+
+    def eval_pinball(self, x, params):
+      val_loss, pred, quantile = params
+      if x >= pred: 
+        pinball_loss = val_loss + quantile * (x - pred)
+      else: 
+        pinball_loss = val_loss + (1-quantile) * (pred - x)
+      return pinball_loss
 
 
-    def intersection(self, params1, params2):
+    def intersection_parabolas(self, params1, params2):
         """Return the intersection point of two parabolas. In the CES regression case, the answer is either None or unique
         """
 
@@ -365,15 +435,42 @@ class CES_regression(ConformalizedES):
         else:
             return None
 
+    def intersection_pinball(self, params1, params2):
+        """Return the intersection point of two pinball loss functions. In the CES regression case, the answer is either None or unique
+        """
+
+        val_loss1, pred1, quantile1 = params1
+        val_loss2, pred2, quantile2 = params2
+
+        assert quantile1 == quantile2 # only considering models for the same quantile level
+        if pred1 != pred2:
+          if pred1 > pred2: 
+            return (1-quantile1) * pred1 + quantile1 * pred2 + val_loss1 - val_loss2
+          else: 
+            return (1-quantile1) * pred2 + quantile1 * pred1 + val_loss2 - val_loss1
+        else:
+            return None    
+
     def parabola_min_interval(self, params, x1, x2):
         """Return the minimum value of the given parabola within interval (x1, x2)
         """
+
         a, b, c = params
         if -b/(2*a) < x2 and -b/(2*a) > x1:
             min_val = self.eval_parabola(-b/(2*a), params)
         else:
             min_val = min(self.eval_parabola(x1, params), self.eval_parabola(x2, params))
         return min_val
+
+    def pinball_min_interval(self, params, x1, x2):
+        """Return the minimum value of the given pinball loss function within interval (x1, x2)
+        """
+        val_loss, pred, quantile = params
+        if pred < x2 and pred > x1:
+            min_val = val_loss
+        else:
+            min_val = min(self.eval_pinball(x1, params), self.eval_pinball(x2, params))
+        return min_val     
 
     def sign(self, a):
         return "+" if a >= 0 else "-"
@@ -401,7 +498,7 @@ class CES_regression(ConformalizedES):
 
         # Next, find new lower envelope within each interval constructed by the adjacent breakpoints
 
-        # set index for calling parabolas in each previous envelope
+        # set index for calling parabolas/pinball functions in each previous envelope
         index1 = 0
         index2 = 0
 
@@ -409,7 +506,7 @@ class CES_regression(ConformalizedES):
         prev_x = -np.inf
         # iterately use each breakpoint as upper bounds
         for idx, x in enumerate(breakpoints):
-            # identify the parabola contributing to previous lower envelope within the interval
+            # identify the parabola/pinball functions contributing to previous lower envelope within the interval
             if x in envelope1:
                 params1 = envelope1[x]
                 index1 += 1
@@ -425,16 +522,26 @@ class CES_regression(ConformalizedES):
                 index2 += 1
                 params1 = envelope1[bp1[index1]]
 
-            # evaluate the two parabolas identified above at the break point and find their intersection point
-            val1 = self.eval_parabola(x, params1)
-            val2 = self.eval_parabola(x, params2)
-            inter_x = self.intersection(params1, params2)
+            # evaluate the two parabolas/pinball functions identified above at the break point and find their intersection point
+            if self.method == 'mse':
+              val1 = self.eval_parabola(x, params1)
+              val2 = self.eval_parabola(x, params2)
+              inter_x = self.intersection_parabolas(params1, params2)
 
-            if val1 == val2:
-                val1 = self.parabola_min_interval(params1, prev_x, x)
-                val2 = self.parabola_min_interval(params2, prev_x, x)
+              if val1 == val2:
+                  val1 = self.parabola_min_interval(params1, prev_x, x)
+                  val2 = self.parabola_min_interval(params2, prev_x, x)
+            
+            elif self.method == 'quantile': 
+              val1 = self.eval_pinball(x, params1)
+              val2 = self.eval_pinball(x, params2)
+              inter_x = self.intersection_pinball(params1, params2)
 
-            # identify which parabola constructs the new lower envelope within this interval
+              if val1 == val2:
+                  val1 = self.pinball_min_interval(params1, prev_x, x)
+                  val2 = self.pinball_min_interval(params2, prev_x, x)
+
+            # identify which parabola/pinball functions constructs the new lower envelope within this interval
             if inter_x is None:
                 if val1 < val2:
                     envelope[x] = params1
@@ -457,20 +564,36 @@ class CES_regression(ConformalizedES):
             # update lower bound
             prev_x = x
 
-        # find the new lower envelope for the last interval (largest breakpoint, infinity), or (negative infinity, infinity) if the previous envelop only consists one parabola
+        # find the new lower envelope for the last interval (largest breakpoint, infinity), or (negative infinity, infinity) if the previous envelop only consists one parabola/pinball function
         params1 = envelope1[np.inf]
         params2 = envelope2[np.inf]
-        inter_x = self.intersection(params1, params2)
+        if self.method == 'mse':
+          inter_x = self.intersection_parabolas(params1, params2)
+        elif self.method == 'quantile':
+          inter_x = self.intersection_pinball(params1, params2)
 
-        if len(breakpoints) >= 1:
-            x = breakpoints[-1]
-            val1 = self.eval_parabola(x, params1)
-            val2 = self.eval_parabola(x, params2)
-        else:
-            a1, b1, c1 = params1
-            a2, b2, c2 = params2
-            val1 = (-b1/(2*a1), c1)
-            val2 = (-b2/(2*a2), c2)
+        if self.method == 'mse':
+          if len(breakpoints) >= 1:
+              x = breakpoints[-1]
+              val1 = self.eval_parabola(x, params1)
+              val2 = self.eval_parabola(x, params2)
+          else:
+              a1, b1, c1 = params1
+              a2, b2, c2 = params2
+              val1 = (-b1/(2*a1), c1)
+              val2 = (-b2/(2*a2), c2)
+
+        elif self.method == 'quantile':
+          if len(breakpoints) >= 1:
+              x = breakpoints[-1]
+              val1 = self.eval_pinball(x, params1)
+              val2 = self.eval_pinball(x, params2)
+          else:
+              val_loss1, pred1, quantile1 = params1
+              val_loss2, pred2, quantile2 = params2
+              val1 = (pred1, val_loss1)
+              val2 = (pred2, val_loss2)
+     
 
         if inter_x is None:
             if val1 < val2:
@@ -494,7 +617,7 @@ class CES_regression(ConformalizedES):
         # update the new lower envelope
         # sort merged envelope
         envelope = OrderedDict(sorted(envelope.items()))
-        # remove points that are not associated with change of parabolas (breakpoints from previous envelopes)
+        # remove points that are not associated with change of parabolas/pinball functions (breakpoints from previous envelopes)
         seen  = set()
         for key, value in list(envelope.items())[::-1]:
             if value in seen:
@@ -506,19 +629,19 @@ class CES_regression(ConformalizedES):
         return envelope
 
     def compute_lower_envelope(self, list_params):
-        """Given a list of parabolas, find the lower envelop by divide and conquer algorithm in O(nlogn)
+        """Given a list of parabolas/pinball functions, find the lower envelop by divide and conquer algorithm in O(nlogn)
         Args:
-            list_params (list): A list of parameters characterizing parabolas (e.g. [(1.0, 0.51, 3), (1.0, 3.11, 2), ...])
+            list_params (list): A list of parameters characterizing parabolas/pinball functions (e.g. [(1.0, 0.51, 3), (1.0, 3.11, 2), ...])
 
         Returns:
-            The lower envelope of the given list of parabolas together with its corresponding upper bound of the interval:
+            The lower envelope of the given list of parabolas/pinball functions together with its corresponding upper bound of the interval:
             format of the output (Example): OrderedDict([(-0.16, (1.0, 0.97, -0.77)), (-0.12, (1.0, -0.16, -0.96), ...)]),
-            meaning that in the interval (neg infinity, -0.16), the parabola (1.0, 0.97, -0.77) contributes to the lower envelope,and  in the interval (-0.16, -0.12), the parabola (1.0, -0.16, -0.96) contributes to the lower envelope
+            meaning that in the interval (neg infinity, -0.16), the parabola/pinball function (1.0, 0.97, -0.77) contributes to the lower envelope, and in the interval (-0.16, -0.12), the parabola/pinball function (1.0, -0.16, -0.96) contributes to the lower envelope
         """
         num_samples = len(list_params)
 
         if num_samples == 1:
-            # single parabola is itself the lower envelope
+            # single parabola/pinball function is itself the lower envelope
             envelope = OrderedDict()
             envelope[np.inf] = list_params[0]
         elif num_samples == 0:
@@ -530,11 +653,13 @@ class CES_regression(ConformalizedES):
 
         return envelope
 
-    def select_model(self, test_inputs = None, return_time_elapsed = False):
+    
+    def select_model(self, test_inputs = None, return_time_elapsed = False, method = 'mse', for_visualization = False):
         """Return selected best models and their associated intervals based on the resulting lower envelope
         Args:
             test_inputs (tensor): test covariates
             return_time_elapsed (Bool): True for returning time elapsed
+            methods (string): which loss function to use (choosing between 'mse' and 'quantile', default is 'mse')
 
         Returns:
             list of dictionaries that contains information of the best models:
@@ -544,11 +669,16 @@ class CES_regression(ConformalizedES):
 
 
         assert self.model_list, 'Call training function to get the model list first!'
+        assert method in ['mse', 'quantile'], 'Choose from "mse" and "quantile"'
+
+        self.method = method
 
         start_time = time.time()
 
         # store the best models
         best_models = []
+        best_models_lower = []
+        best_models_higher = []
 
         # if burn_out:
         #   self.model_list = self.model_list[burn_out:]
@@ -556,36 +686,96 @@ class CES_regression(ConformalizedES):
 
         # Return non-conformal benchmark model if no test data is given
         if test_inputs is None:
-            best_loss = np.min(self.val_loss_history)
-            best_model = self.model_list[np.argmin(self.val_loss_history)]
-            test_val_loss_history = self.val_loss_history
-            # print(best_loss)
-            # print(best_model)
+            if method == 'mse':
+                best_loss = np.min(self.val_loss_history)
+                best_model = self.model_list[np.argmin(self.val_loss_history)]
+                test_val_loss_history = self.val_loss_history
+                # print(best_loss)
+                # print(best_model)
 
-            return best_loss, best_model, test_val_loss_history
+                return best_loss, best_model, test_val_loss_history
+            elif method == 'quantile':
+                val_loss_history_lower = self.sep_val_loss_history[self.net.quantiles[0]]
+                val_loss_history_higher = self.sep_val_loss_history[self.net.quantiles[1]]
+                best_loss_lower = np.min(self.sep_val_loss_history[self.net.quantiles[0]])
+                best_model_lower = self.model_list[np.argmin(self.sep_val_loss_history[self.net.quantiles[0]])]
+                best_loss_higher = np.min(self.sep_val_loss_history[self.net.quantiles[1]])
+                best_model_higher = self.model_list[np.argmin(self.sep_val_loss_history[self.net.quantiles[1]])]
+
+                return [best_loss_lower, best_model_lower, val_loss_history_lower, best_loss_higher, best_model_higher, val_loss_history_higher]
+
+
 
 
         else:
             # for each of the saved model, define their associated loss functions and record model paths
-            modidx_params = self.define_parabolas(test_inputs)
-            params = list(modidx_params.values())
-            # find the lower envelope of the parabolas
-            lower_envelope = self.compute_lower_envelope(params)
+            if self.method == "mse":
+                modidx_params = self.define_parabolas(test_inputs)
+                params = list(modidx_params.values())
+                # find the lower envelope of the parabolas
+                lower_envelope = self.compute_lower_envelope(params)
 
-            # identify the best models with corresponding intervals using the lower envelope
-            lower = -np.inf
-            for key,value in lower_envelope.items():
-                mod_idx = [k for k, v in modidx_params.items() if v == value]
-                upper = key
-                best_models.append({
-                    'model':mod_idx[0],
-                    'knot_lower':lower,
-                    'knot_upper':upper})
-                lower = upper
+                # identify the best models with corresponding intervals using the lower envelope
+                lower = -np.inf
+                for key,value in lower_envelope.items():
+                    mod_idx = [k for k, v in modidx_params.items() if v == value]
+                    upper = key
+                    best_models.append({
+                        'model':mod_idx[0],
+                        'knot_lower':lower,
+                        'knot_upper':upper})
+                    lower = upper
+                
+                time_elapsed = time.time() - start_time
+                # print(f"elapse time (selecting best models using old method):{time_elapsed}")
+                if return_time_elapsed:
+                    return best_models, time_elapsed
+                if for_visualization:
+                    return params, lower_envelope, best_models
 
-        time_elapsed = time.time() - start_time
-        # print(f"elapse time (selecting best models using old method):{time_elapsed}")
-        if return_time_elapsed:
-          return best_models, time_elapsed
+                return best_models
+            
+            elif self.method == "quantile":
+                modidx_params_lower, modidx_params_higher = self.define_pinball(test_inputs)
+                params_lower = list(modidx_params_lower.values())
+                params_higher = list(modidx_params_higher.values())
+                # find the lower envelope of the parabolas
+                lower_envelope_lower = self.compute_lower_envelope(params_lower)
+                lower_envelope_higher = self.compute_lower_envelope(params_higher)
 
-        return best_models
+                # identify the best models with corresponding intervals using the lower envelope
+                lower = -np.inf
+                for key,value in lower_envelope_lower.items():
+                    mod_idx = [k for k, v in modidx_params_lower.items() if v == value]
+                    upper = key
+                    best_models_lower.append({
+                        'model':mod_idx[0],
+                        'knot_lower':lower,
+                        'knot_upper':upper})
+                    lower = upper
+
+                # identify the best models with corresponding intervals using the lower envelope
+                lower = -np.inf
+                for key,value in lower_envelope_higher.items():
+                    mod_idx = [k for k, v in modidx_params_higher.items() if v == value]
+                    upper = key
+                    best_models_higher.append({
+                        'model':mod_idx[0],
+                        'knot_lower':lower,
+                        'knot_upper':upper})
+                    lower = upper
+
+
+                time_elapsed = time.time() - start_time
+                # print(f"elapse time (selecting best models using old method):{time_elapsed}")
+                if return_time_elapsed:
+                    return best_models_lower, best_models_higher, time_elapsed
+                if for_visualization:
+                    return {"lower_quantile":[params_lower,lower_envelope_lower, best_models_lower],
+                        "higher_quantile":[params_lower,lower_envelope_lower, best_models_higher],}
+
+                return best_models_lower, best_models_higher
+
+
+
+
